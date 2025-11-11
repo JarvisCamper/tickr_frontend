@@ -1,6 +1,6 @@
 // app/api/auth/signup.ts
 import Cookies from "js-cookie";
-import { login,LoginResponse } from "./login"; // Reuse login after signup
+import { login,LoginResponse } from "./login"; 
 
 export interface SignupRequest {
   username: string;
@@ -19,7 +19,7 @@ export interface SignupResponse {
 
 export async function signup(credentials: SignupRequest): Promise<SignupResponse> {
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_Backend_URL}/api/users/`,
+    `${process.env.NEXT_PUBLIC_Backend_URL}/api/signup/`,
     {
       method: "POST",
       headers: {
@@ -37,10 +37,12 @@ export async function signup(credentials: SignupRequest): Promise<SignupResponse
   }
 
   // Auto-login after successful signup
-  const loginResponse = await login({
+  const loginResponse = await login({ 
     email: credentials.email,
     password: credentials.password,
   });
+
+  
 
   // Store tokens (same as login)
   Cookies.set("access_token", loginResponse.access_token, { expires: 7 });
