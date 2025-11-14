@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
+import { useProjects } from '../layout';
 
 interface TimeEntry {
   id: number;
@@ -14,12 +15,8 @@ interface TimeEntry {
   is_running: boolean;
 }
 
-interface Project {
-  id: number;
-  name: string;
-}
-
 export default function TimerPage() {
+  const { projects: contextProjects } = useProjects(); // Get projects from context
   const [description, setDescription] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [time, setTime] = useState(0);
@@ -27,13 +24,10 @@ export default function TimerPage() {
   const [runningEntryId, setRunningEntryId] = useState<number | null>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [userEmail, setUserEmail] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [editingEntry, setEditingEntry] = useState<number | null>(null);
   const [editDescription, setEditDescription] = useState("");
-  const [showProjectModal, setShowProjectModal] = useState(false);
-  const [newProjectName, setNewProjectName] = useState("");
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   
   const entriesPerPage = 10;
@@ -47,7 +41,6 @@ export default function TimerPage() {
   // Fetch user info and data on mount
   useEffect(() => {
     fetchUserInfo();
-    fetchProjects();
     fetchTimeEntries();
     checkRunningTimer();
   }, []);
@@ -117,23 +110,9 @@ export default function TimerPage() {
     }
   };
 
-  const fetchProjects = async () => {
-    try {
-      const response = await fetch("http://127.0.0.1:8000/api/projects/", {
-        headers: getAuthHeaders(),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setProjects(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch projects:", error);
-    }
-  };
-
   const fetchTimeEntries = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/time-entries/", {
+      const response = await fetch("http://127.0.0.1:8000/api/entries/", {
         headers: getAuthHeaders(),
       });
       if (response.ok) {
@@ -160,7 +139,7 @@ export default function TimerPage() {
     }
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/time-entries/start/", {
+      const response = await fetch("http://127.0.0.1:8000/api/entries/start/", {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -188,7 +167,7 @@ export default function TimerPage() {
 
   const handleStop = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/time-entries/stop/", {
+      const response = await fetch("http://127.0.0.1:8000/api/entries/stop/", {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -215,34 +194,6 @@ export default function TimerPage() {
     }
   };
 
-  const handleCreateProject = async () => {
-    if (!newProjectName.trim()) {
-      showToast("Project name is required", "error");
-      return;
-    }
-
-    try {
-      const response = await fetch("http://127.0.0.1:8000/api/projects/", {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ name: newProjectName }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setProjects([...projects, data]);
-        setNewProjectName("");
-        setShowProjectModal(false);
-        showToast("Project created successfully!", "success");
-      } else {
-        showToast("Failed to create project", "error");
-      }
-    } catch (error) {
-      console.error("Error creating project:", error);
-      showToast("Error creating project", "error");
-    }
-  };
-
   const handleEdit = (entry: TimeEntry) => {
     setEditingEntry(entry.id);
     setEditDescription(entry.description);
@@ -250,7 +201,7 @@ export default function TimerPage() {
 
   const handleSaveEdit = async (entryId: number) => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/time-entries/${entryId}/`, {
+      const response = await fetch(`http://127.0.0.1:8000/api/entries/${entryId}/`, {
         method: "PATCH",
         headers: getAuthHeaders(),
         body: JSON.stringify({ description: editDescription }),
@@ -273,7 +224,7 @@ export default function TimerPage() {
     if (!confirm("Are you sure you want to delete this entry?")) return;
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/time-entries/${id}/`, {
+      const response = await fetch(`http://127.0.0.1:8000/api/entries/${id}/`, {
         method: "DELETE",
         headers: getAuthHeaders(),
       });
@@ -307,41 +258,6 @@ export default function TimerPage() {
         </div>
       )}
 
-      {/* Project Modal */}
-      {showProjectModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
-          <div className="bg-white rounded-lg p-6 w-96">
-            <h2 className="text-xl font-bold mb-4">Create New Project</h2>
-            <input
-              type="text"
-              value={newProjectName}
-              onChange={(e) => setNewProjectName(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleCreateProject()}
-              placeholder="Project name"
-              className="w-full px-4 py-2 border rounded-md mb-4 text-black"
-              autoFocus
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={handleCreateProject}
-                className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-              >
-                Create
-              </button>
-              <button
-                onClick={() => {
-                  setShowProjectModal(false);
-                  setNewProjectName("");
-                }}
-                className="flex-1 bg-gray-300 px-4 py-2 rounded-md hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Time Tracker</h1>
 
@@ -357,26 +273,17 @@ export default function TimerPage() {
               disabled={isRunning}
             />
 
-            <div className="flex items-center gap-2">
-              <select
-                value={selectedProjectId || ""}
-                onChange={(e) => setSelectedProjectId(e.target.value ? Number(e.target.value) : null)}
-                className="px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black"
-              >
-                <option value="">No project</option>
-                {projects.map(project => (
-                  <option key={project.id} value={project.id}>{project.name}</option>
-                ))}
-              </select>
-              <button
-                onClick={() => setShowProjectModal(true)}
-                className="px-3 py-3 text-blue-600 hover:bg-blue-50 rounded-md text-xl"
-                title="Add new project"
-                disabled={isRunning}
-              >
-                ➕
-              </button>
-            </div>
+            <select
+              value={selectedProjectId || ""}
+              onChange={(e) => setSelectedProjectId(e.target.value ? Number(e.target.value) : null)}
+              className="px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black min-w-[200px]"
+              disabled={isRunning}
+            >
+              <option value="">No project</option>
+              {contextProjects.map(project => (
+                <option key={project.id} value={project.id}>{project.name}</option>
+              ))}
+            </select>
 
             <div className="text-2xl font-mono font-semibold text-gray-900 min-w-[120px] text-center">
               {formatTime(time)}
