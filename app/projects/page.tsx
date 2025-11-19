@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Trash2, UserPlus, Users, Edit2, Mail, Share2, X } from 'lucide-react';
+import { Trash2, Users, Edit2, X } from 'lucide-react';
 import Cookies from 'js-cookie';
 
 interface Project {
@@ -28,10 +28,8 @@ const ProjectsPage = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showInviteModal, setShowInviteModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [inviteEmail, setInviteEmail] = useState('');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [newProject, setNewProject] = useState<NewProjectForm>({
     name: '',
@@ -172,42 +170,6 @@ const ProjectsPage = () => {
     }
   };
 
-  const handleInvite = (project: Project) => {
-    setSelectedProject(project);
-    setShowInviteModal(true);
-  };
-
-  const handleSendInvite = () => {
-    if (!inviteEmail || !selectedProject) return;
-
-    const inviteLink = `${window.location.origin}/join-project/${selectedProject.id}`;
-    
-    // Email link
-    const emailSubject = `Invitation to join ${selectedProject.name}`;
-    const emailBody = `You've been invited to join the project "${selectedProject.name}".\n\nClick here to join: ${inviteLink}`;
-    const mailtoLink = `mailto:${inviteEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-    
-    // WhatsApp link
-    const whatsappMessage = `You've been invited to join the project "${selectedProject.name}". Click here to join: ${inviteLink}`;
-    const whatsappLink = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
-
-    // Copy link to clipboard
-    navigator.clipboard.writeText(inviteLink);
-    
-    showToast("Invite link copied! Choose your platform:", "success");
-    
-    // Show options
-    const choice = window.confirm("Click OK to send via Email, Cancel to share via WhatsApp");
-    if (choice) {
-      window.open(mailtoLink, '_blank');
-    } else {
-      window.open(whatsappLink, '_blank');
-    }
-
-    setInviteEmail('');
-    setShowInviteModal(false);
-  };
-
   const handleViewMembers = async (project: Project) => {
     setSelectedProject(project);
     setShowMembersModal(true);
@@ -341,24 +303,14 @@ const ProjectsPage = () => {
                           <span>Edit</span>
                         </button>
                         {project.type === 'group' && (
-                          <>
-                            <button
-                              onClick={() => handleInvite(project)}
-                              className="text-green-600 hover:text-green-800 flex items-center space-x-1"
-                              title="Invite members"
-                            >
-                              <UserPlus size={16} />
-                              <span>Invite</span>
-                            </button>
-                            <button
-                              onClick={() => handleViewMembers(project)}
-                              className="text-purple-600 hover:text-purple-800 flex items-center space-x-1"
-                              title="View members"
-                            >
-                              <Users size={16} />
-                              <span>Members</span>
-                            </button>
-                          </>
+                          <button
+                            onClick={() => handleViewMembers(project)}
+                            className="text-purple-600 hover:text-purple-800 flex items-center space-x-1"
+                            title="View members"
+                          >
+                            <Users size={16} />
+                            <span>Members</span>
+                          </button>
                         )}
                         <button
                           onClick={() => handleDelete(project.id)}
@@ -533,52 +485,6 @@ const ProjectsPage = () => {
                 disabled={isLoading}
               >
                 {isLoading ? "Updating..." : "Update"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Invite Modal */}
-      {showInviteModal && selectedProject && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-900">Invite to {selectedProject.name}</h3>
-              <button onClick={() => setShowInviteModal(false)} className="text-gray-500 hover:text-gray-700">
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md text-black"
-                  placeholder="colleague@example.com"
-                />
-              </div>
-              <p className="text-sm text-gray-600">
-                A link will be generated that you can share via email or WhatsApp
-              </p>
-            </div>
-
-            <div className="flex justify-end space-x-3 mt-6">
-              <button
-                onClick={() => setShowInviteModal(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSendInvite}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md flex items-center space-x-2"
-              >
-                <Share2 size={16} />
-                <span>Generate & Share</span>
               </button>
             </div>
           </div>

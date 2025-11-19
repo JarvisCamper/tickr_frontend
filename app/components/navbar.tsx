@@ -10,11 +10,8 @@ export default function Navbar() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  // Check authentication status
   useEffect(() => {
     checkAuth();
-    
-    // Listen for auth changes
     window.addEventListener('auth-changed', checkAuth);
     return () => window.removeEventListener('auth-changed', checkAuth);
   }, []);
@@ -22,7 +19,6 @@ export default function Navbar() {
   const checkAuth = () => {
     const token = Cookies.get('access_token');
     setIsAuthenticated(!!token);
-    
     if (token) {
       fetchUserInfo();
     } else {
@@ -42,8 +38,6 @@ export default function Navbar() {
       if (response.ok) {
         const data = await response.json();
         setUserEmail(data.email);
-      } else {
-        console.error('Failed to fetch user info:', response.status);
       }
     } catch (error) {
       console.error('Failed to fetch user info:', error);
@@ -78,7 +72,6 @@ export default function Navbar() {
           Tickr
         </Link>
         
-        {/* Hamburger Menu Button - Mobile Only */}
         <button 
           className="md:hidden flex flex-col space-y-1.5 p-2"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -89,16 +82,11 @@ export default function Navbar() {
           <span className="block w-6 h-0.5 bg-black"></span>
         </button>
 
-        {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-8">
           {isAuthenticated ? (
             <>
               {authenticatedLinks.map(link => (
-                <Link 
-                  key={link.name} 
-                  href={link.href} 
-                  className="text-black hover:text-blue-600"
-                >
+                <Link key={link.name} href={link.href} className="text-black hover:text-blue-600">
                   {link.name}
                 </Link>
               ))}
@@ -113,21 +101,12 @@ export default function Navbar() {
           ) : (
             <>
               {publicLinks.map(link => (
-                <Link 
-                  key={link.name} 
-                  href={link.href} 
-                  className="text-black hover:text-blue-600"
-                >
+                <Link key={link.name} href={link.href} className="text-black hover:text-blue-600">
                   {link.name}
                 </Link>
               ))}
-              <Link href="/login" className="text-black hover:text-blue-600">
-                Login
-              </Link>
-              <Link 
-                href="/signup" 
-                className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-              >
+              <Link href="/login" className="text-black hover:text-blue-600">Login</Link>
+              <Link href="/signup" className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
                 Sign Up
               </Link>
             </>
@@ -135,56 +114,29 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
       {isMenuOpen && (
         <div className="md:hidden mt-4 pb-4 space-y-3">
           {isAuthenticated ? (
             <>
               {authenticatedLinks.map(link => (
-                <Link 
-                  key={link.name} 
-                  href={link.href} 
-                  className="block py-2 text-black hover:text-blue-600"
-                  onClick={() => setIsMenuOpen(false)}
-                >
+                <Link key={link.name} href={link.href} className="block py-2 text-black hover:text-blue-600" onClick={() => setIsMenuOpen(false)}>
                   {link.name}
                 </Link>
               ))}
               <div className="py-2 text-gray-600 text-sm">{userEmail}</div>
-              <button
-                onClick={() => {
-                  handleLogout();
-                  setIsMenuOpen(false);
-                }}
-                className="w-full text-left py-2 text-red-600 hover:text-red-800"
-              >
+              <button onClick={() => { handleLogout(); setIsMenuOpen(false); }} className="w-full text-left py-2 text-red-600 hover:text-red-800">
                 Logout
               </button>
             </>
           ) : (
             <>
               {publicLinks.map(link => (
-                <Link 
-                  key={link.name} 
-                  href={link.href} 
-                  className="block py-2 text-black hover:text-blue-600"
-                  onClick={() => setIsMenuOpen(false)}
-                >
+                <Link key={link.name} href={link.href} className="block py-2 text-black hover:text-blue-600" onClick={() => setIsMenuOpen(false)}>
                   {link.name}
                 </Link>
               ))}
-              <Link 
-                href="/login" 
-                className="block py-2 text-black hover:text-blue-600"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Login
-              </Link>
-              <Link 
-                href="/signup" 
-                className="block py-2 bg-blue-500 text-white px-4 rounded-md hover:bg-blue-600 text-center"
-                onClick={() => setIsMenuOpen(false)}
-              >
+              <Link href="/login" className="block py-2 text-black hover:text-blue-600" onClick={() => setIsMenuOpen(false)}>Login</Link>
+              <Link href="/signup" className="block py-2 bg-blue-500 text-white px-4 rounded-md hover:bg-blue-600 text-center" onClick={() => setIsMenuOpen(false)}>
                 Sign Up
               </Link>
             </>
