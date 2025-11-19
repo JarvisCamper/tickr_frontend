@@ -21,7 +21,6 @@ export default function SignupPage() {
     setError(null);
     setIsLoading(true);
 
-    // Validate passwords match
     if (password !== password2) {
       setError("Passwords do not match");
       setIsLoading(false);
@@ -29,12 +28,9 @@ export default function SignupPage() {
     }
 
     try {
-      // Step 1: Sign up
       const signupResponse = await fetch("http://127.0.0.1:8000/api/signup/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, password, password2 }),
       });
 
@@ -43,14 +39,9 @@ export default function SignupPage() {
         throw new Error(errorData.email?.[0] || errorData.username?.[0] || "Signup failed");
       }
 
-      console.log("Signup successful! Now logging in...");
-
-      // Step 2: Auto-login after successful signup
       const loginResponse = await fetch("http://127.0.0.1:8000/api/login/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
@@ -59,47 +50,16 @@ export default function SignupPage() {
       }
 
       const loginData = await loginResponse.json();
-
-      // Store tokens in cookies
       Cookies.set("access_token", loginData.access_token, { expires: 7 });
       Cookies.set("refresh_token", loginData.refresh_token, { expires: 7 });
-
-      console.log("Auto-login successful!");
-
-      // Notify navbar of auth change
       window.dispatchEvent(new Event("auth-changed"));
-
-      // Redirect to timer page
       router.push("/timer");
     } catch (error) {
-      console.error("Signup failed:", error);
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : "Signup failed. Please try again.";
+      const errorMessage = error instanceof Error ? error.message : "Signup failed. Please try again.";
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleUsernameChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setUsername(e.target.value);
-    if (error) setError(null);
-  };
-
-  const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value);
-    if (error) setError(null);
-  };
-
-  const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setPassword(e.target.value);
-    if (error) setError(null);
-  };
-
-  const handlePassword2Change = (e: ChangeEvent<HTMLInputElement>) => {
-    setPassword2(e.target.value);
-    if (error) setError(null);
   };
 
   return (
@@ -107,82 +67,61 @@ export default function SignupPage() {
       <header className="bg-gray-100 py-12 px-6">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900">Sign up</h1>
-          <p className="mt-2 text-gray-600">
-            Create your account and start tracking time
-          </p>
+          <p className="mt-2 text-gray-600">Create your account and start tracking time</p>
         </div>
       </header>
 
       <main className="py-12">
         <div className="max-w-3xl mx-auto px-4">
           <form onSubmit={handleSubmit} className="bg-white">
-            {/* Error Message */}
             {error && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
                 <p className="text-sm text-red-600">{error}</p>
               </div>
             )}
 
-            {/* Username Field */}
             <div className="mb-6">
-              <label
-                htmlFor="username"
-                className="block text-sm font-medium text-gray-900 mb-2"
-              >
-                Username
-              </label>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-900 mb-2">Username</label>
               <input
                 id="username"
                 type="text"
                 value={username}
-                onChange={handleUsernameChange}
+                onChange={(e) => setUsername(e.target.value)}
                 required
                 disabled={isLoading}
                 suppressHydrationWarning
-                className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-black disabled:bg-gray-50 disabled:cursor-not-allowed"
+                className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-black disabled:bg-gray-50"
                 placeholder="johndoe"
               />
             </div>
 
-            {/* Email Field */}
             <div className="mb-6">
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-900 mb-2"
-              >
-                E-mail
-              </label>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-900 mb-2">E-mail</label>
               <input
                 id="email"
                 type="email"
                 value={email}
-                onChange={handleEmailChange}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
                 suppressHydrationWarning
-                className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-black disabled:bg-gray-50 disabled:cursor-not-allowed"
+                className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-black disabled:bg-gray-50"
                 placeholder="you@example.com"
               />
             </div>
 
-            {/* Password Field */}
             <div className="mb-6">
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-900 mb-2"
-              >
-                Password
-              </label>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-900 mb-2">Password</label>
               <div className="relative">
                 <input
                   id="password"
                   type={showPass ? "text" : "password"}
                   value={password}
-                  onChange={handlePasswordChange}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isLoading}
                   suppressHydrationWarning
-                  className="w-full border border-gray-200 rounded-md px-3 py-2 pr-16 focus:outline-none focus:ring-2 focus:ring-blue-300 text-black disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  className="w-full border border-gray-200 rounded-md px-3 py-2 pr-16 focus:outline-none focus:ring-2 focus:ring-blue-300 text-black disabled:bg-gray-50"
                   placeholder="Enter your password"
                 />
                 <button
@@ -196,33 +135,26 @@ export default function SignupPage() {
               </div>
             </div>
 
-            {/* Confirm Password Field */}
             <div className="mb-6">
-              <label
-                htmlFor="password2"
-                className="block text-sm font-medium text-gray-900 mb-2"
-              >
-                Confirm Password
-              </label>
+              <label htmlFor="password2" className="block text-sm font-medium text-gray-900 mb-2">Confirm Password</label>
               <input
                 id="password2"
                 type={showPass ? "text" : "password"}
                 value={password2}
-                onChange={handlePassword2Change}
+                onChange={(e) => setPassword2(e.target.value)}
                 required
                 disabled={isLoading}
                 suppressHydrationWarning
-                className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-black disabled:bg-gray-50 disabled:cursor-not-allowed"
+                className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-black disabled:bg-gray-50"
                 placeholder="Confirm your password"
               />
             </div>
 
-            {/* Submit Button */}
             <div className="mb-6">
               <button
                 type="submit"
                 disabled={isLoading}
-                className="inline-flex items-center bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-md transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="inline-flex items-center bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-md transition-colors disabled:bg-gray-400"
               >
                 {isLoading ? "Creating account..." : "Sign up"}
               </button>
@@ -232,9 +164,7 @@ export default function SignupPage() {
 
             <div className="text-base text-gray-700">
               <p className="mb-2">Already have an account?</p>
-              <Link href="/login" className="text-blue-600 hover:underline">
-                Log in here
-              </Link>
+              <Link href="/login" className="text-blue-600 hover:underline">Log in here</Link>
             </div>
           </form>
         </div>

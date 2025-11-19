@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/navbar";
 import Footer from './components/footer';
+import { Providers } from "../context-and-provider/Providers";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,11 +14,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-
-export const metadata: Metadata = {
-  title: "Tickr - Time Tracking",
-  description: "Track your time efficiently with Tickr",
-};
 
 export default function RootLayout({
   children,
@@ -30,16 +26,13 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`} 
         suppressHydrationWarning
       >
-        {/* Fixed Navbar at top */}
-        <Navbar />
-        
-        {/* Main content with padding to prevent hiding behind fixed navbar & footer */}
-        <main className="pt-20 pb-20 min-h-screen">
-          {children}
-        </main>
-        
-        {/* Fixed Footer at bottom */}
-        <Footer />
+        <Providers>
+          <Navbar />
+          <main className="pt-20 pb-20 min-h-screen">
+            {children}
+          </main>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );
