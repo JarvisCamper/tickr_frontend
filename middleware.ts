@@ -9,17 +9,29 @@ export default function middleware(request: NextRequest) {
   console.log("TOKEN:", accessToken);
 
   const publicRoutes = ["/", "/login", "/signup"];
-  const isPublicRoute = publicRoutes.includes(pathname);
+  // Allow AcceptInvite pages to be accessed without auth (they handle their own auth check)
+  const isAcceptInvitePage = pathname.startsWith("/teams/AcceptInvite/");
+  const isPublicRoute = publicRoutes.includes(pathname) || isAcceptInvitePage;
 
   if (!accessToken) {
     if (isPublicRoute) {
       return NextResponse.next();
     }
-    return NextResponse.redirect(new URL("/login", request.url));
+    // Preserve the current URL as redirect parameter
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
+  // Don't redirect from login/signup if there's a redirect parameter (let the page handle it)
+  // Also allow access to login/signup pages even when authenticated if they have a redirect
   if (pathname === "/login" || pathname === "/signup") {
-    return NextResponse.redirect(new URL("/timer", request.url));
+    if (request.nextUrl.searchParams.has("redirect")) {
+      return NextResponse.next(); // Allow access if redirect parameter exists
+    }
+    if (accessToken) {
+      return NextResponse.redirect(new URL("/teams", request.url));
+    }
   }
 
   return NextResponse.next();

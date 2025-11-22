@@ -1,16 +1,27 @@
 "use client";
-import { useState, ChangeEvent, FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useState, ChangeEvent, FormEvent, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Cookies from "js-cookie";
+import { useAuth } from "../../context-and-provider/AuthContext";
+import { getApiUrl } from "@/constant/apiendpoints";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { login, isAuthenticated } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const redirectTo = searchParams.get("redirect") || "/teams";
+      router.push(redirectTo);
+    }
+  }, [isAuthenticated, router, searchParams]);
 
   const togglePass = () => setShowPass(!showPass);
 
@@ -20,7 +31,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/login/", {
+      const response = await fetch(getApiUrl("login/"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -32,10 +43,19 @@ export default function LoginPage() {
       }
 
       const data = await response.json();
-      Cookies.set("access_token", data.access_token, { expires: 7 });
-      Cookies.set("refresh_token", data.refresh_token, { expires: 7 });
+      
+      // Get redirect URL from query params BEFORE login (to preserve it)
+      const redirectTo = searchParams.get("redirect") || "/teams";
+      
+      // Use AuthContext login method to update auth state
+      login(data.access_token, data.refresh_token);
+      
+      // Dispatch event for any other listeners
       window.dispatchEvent(new Event("auth-changed"));
-      router.push("/timer");
+      
+      // Use window.location for a full page reload to ensure auth state is properly set
+      // This is more reliable than router.push for post-login redirects
+      window.location.href = redirectTo;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Login failed. Please check your credentials.";
       setError(errorMessage);
@@ -116,7 +136,12 @@ export default function LoginPage() {
 
             <div className="text-base text-gray-700">
               <p className="mb-2">Don't have an account?</p>
-              <Link href="/signup" className="text-blue-600 hover:underline">Create one for free</Link>
+              <Link 
+                href={searchParams.get("redirect") ? `/signup?redirect=${encodeURIComponent(searchParams.get("redirect")!)}` : "/signup"} 
+                className="text-blue-600 hover:underline"
+              >
+                Create one for free
+              </Link>
             </div>
           </form>
         </div>

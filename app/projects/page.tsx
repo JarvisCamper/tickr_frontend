@@ -24,6 +24,8 @@ interface NewProjectForm {
   team_id: string;
 }
 
+import { API_BASE_URL, getApiUrl } from '@/constant/apiendpoints';
+
 const ProjectsPage = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
@@ -57,7 +59,7 @@ const ProjectsPage = () => {
   // Fetch current user
   const fetchCurrentUser = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/user/", {
+      const response = await fetch(getApiUrl("user/"), {
         headers: getAuthHeaders(),
       });
       if (response.ok) {
@@ -72,16 +74,13 @@ const ProjectsPage = () => {
   // Fetch projects - only user's own projects
   const fetchProjects = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/projects/", {
+      const response = await fetch(getApiUrl("projects/"), {
         headers: getAuthHeaders(),
       });
       if (response.ok) {
         const data = await response.json();
-        // Filter to show only current user's projects
-        const userProjects = currentUserId 
-          ? data.filter((p: Project) => p.creator.id === currentUserId)
-          : data;
-        setProjects(userProjects);
+        // Show all projects returned by the API (backend already filters by auth)
+        setProjects(data);
       } else {
         showToast("Failed to load projects", "error");
       }
@@ -92,20 +91,14 @@ const ProjectsPage = () => {
   };
 
   useEffect(() => {
-    fetchCurrentUser();
+    fetchProjects();
   }, []);
-
-  useEffect(() => {
-    if (currentUserId) {
-      fetchProjects();
-    }
-  }, [currentUserId]);
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this project?')) return;
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/projects/${id}/`, {
+      const response = await fetch(getApiUrl(`projects/${id}/`), {
         method: "DELETE",
         headers: getAuthHeaders(),
       });
@@ -148,7 +141,7 @@ const ProjectsPage = () => {
         projectData.team_id = parseInt(newProject.team_id);
       }
 
-      const response = await fetch(`http://127.0.0.1:8000/api/projects/${editingProject.id}/`, {
+      const response = await fetch(getApiUrl(`projects/${editingProject.id}/`), {
         method: "PATCH",
         headers: getAuthHeaders(),
         body: JSON.stringify(projectData),
@@ -173,7 +166,6 @@ const ProjectsPage = () => {
   const handleViewMembers = async (project: Project) => {
     setSelectedProject(project);
     setShowMembersModal(true);
-    // TODO: Fetch actual members from backend
     showToast("Loading members...", "success");
   };
 
@@ -196,7 +188,7 @@ const ProjectsPage = () => {
         projectData.team_id = parseInt(newProject.team_id);
       }
 
-      const response = await fetch("http://127.0.0.1:8000/api/projects/", {
+      const response = await fetch(getApiUrl("projects/"), {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(projectData),
@@ -232,12 +224,12 @@ const ProjectsPage = () => {
 
   return (
     <div className="container mx-auto px-6 py-8">
-      {/* Toast Notification */}
+      {/* Toast Notification - FIXED: Using span for dynamic content */}
       {toast && (
         <div className={`fixed top-20 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
           toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
         } text-white`}>
-          {toast.message}
+          <span>{toast.message}</span>
         </div>
       )}
 

@@ -4,12 +4,12 @@ import { useRouter } from "next/navigation";
 import { TimeControl } from './components/TimeControl';  
 import { TimeEntriesTable } from './components/TimeEntriesTable';
 import { ProjectModal } from './components/ProjectModal';
+import { EditEntryModal } from './components/EditEntryModel';
 import { useTimer } from './hooks/useTimer';
 import { useToast } from "../../context-and-provider";
 import { useAuth } from "../../context-and-provider/AuthContext";
 import { TimeEntry, Project } from './types';
-
-const API_BASE_URL = "http://127.0.0.1:8000/api";
+import { getApiUrl } from '@/constant/apiendpoints';
 
 export default function TimerPage() {
   const router = useRouter();
@@ -22,8 +22,8 @@ export default function TimerPage() {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [editingEntry, setEditingEntry] = useState<number | null>(null);
-  const [editDescription, setEditDescription] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +46,7 @@ export default function TimerPage() {
 
   const checkActiveTimer = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/entries/active/`, {
+      const response = await fetch(getApiUrl("entries/active/"), {
         headers: getAuthHeaders(),
       });
       if (response.ok) {
@@ -64,7 +64,7 @@ export default function TimerPage() {
 
   const fetchProjects = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/projects/`, {
+      const response = await fetch(getApiUrl("projects/"), {
         headers: getAuthHeaders(),
       });
       if (response.ok) {
@@ -82,7 +82,7 @@ export default function TimerPage() {
 
   const fetchTimeEntries = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/entries/`, {
+      const response = await fetch(getApiUrl("entries/"), {
         headers: getAuthHeaders(),
       });
       if (response.ok) {
@@ -113,7 +113,7 @@ export default function TimerPage() {
         payload.project_id = selectedProjectId;
       }
 
-      const response = await fetch(`${API_BASE_URL}/entries/start/`, {
+      const response = await fetch(getApiUrl("entries/start/"), {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(payload),
@@ -135,7 +135,7 @@ export default function TimerPage() {
 
   const handleStop = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/entries/stop/`, {
+      const response = await fetch(getApiUrl("entries/stop/"), {
         method: "POST",
         headers: getAuthHeaders(),
       });
@@ -170,7 +170,7 @@ export default function TimerPage() {
         type: "individual",
       };
 
-      const response = await fetch(`${API_BASE_URL}/projects/`, {
+      const response = await fetch(getApiUrl("projects/"), {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(payload),
@@ -196,20 +196,21 @@ export default function TimerPage() {
   };
 
   const handleEdit = (entry: TimeEntry) => {
-    setEditingEntry(entry.id);
-    setEditDescription(entry.description);
+    setEditingEntry(entry);
+    setShowEditModal(true);
   };
 
-  const handleSaveEdit = async (entryId: number) => {
+  const handleSaveEdit = async (entryId: number, updates: Partial<TimeEntry>) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/entries/${entryId}/`, {
+      const response = await fetch(getApiUrl(`entries/${entryId}/`), {
         method: "PATCH",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ description: editDescription.trim() }),
+        body: JSON.stringify(updates),
       });
 
       if (response.ok) {
         fetchTimeEntries();
+        setShowEditModal(false);
         setEditingEntry(null);
         showToast("Entry updated!", "success");
       } else {
@@ -227,7 +228,7 @@ export default function TimerPage() {
     if (!confirm("Are you sure you want to delete this entry?")) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/entries/${id}/`, {
+      const response = await fetch(getApiUrl(`entries/${id}/`), {
         method: "DELETE",
         headers: getAuthHeaders(),
       });
@@ -282,12 +283,7 @@ export default function TimerPage() {
 
         <TimeEntriesTable
           entries={currentEntries}
-          editingEntry={editingEntry}
-          editDescription={editDescription}
-          setEditDescription={setEditDescription}
           onEdit={handleEdit}
-          onSaveEdit={handleSaveEdit}
-          onCancelEdit={() => setEditingEntry(null)}
           onDelete={handleDelete}
           currentPage={currentPage}
           totalPages={totalPages}
@@ -304,6 +300,17 @@ export default function TimerPage() {
           }}
           onCreate={handleCreateProject}
           isLoading={isLoading}
+        />
+
+        <EditEntryModal
+          isOpen={showEditModal}
+          entry={editingEntry}
+          projects={projects}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingEntry(null);
+          }}
+          onSave={handleSaveEdit}
         />
       </div>
     </div>

@@ -1,28 +1,50 @@
+
 import React from 'react';
 import { TimeEntry } from '../types'; 
 
 interface TimeEntriesTableProps {
   entries: TimeEntry[];
-  editingEntry: number | null;
-  editDescription: string;
-  setEditDescription: (val: string) => void;
-  onEdit: (entry: TimeEntry) => void;
-  onSaveEdit: (id: number) => void;
-  onCancelEdit: () => void;
+  onEdit: (entry: TimeEntry) => void;  // Opens modal
   onDelete: (id: number) => void;
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
 }
 
+// Helper function to format duration properly
+function formatDuration(durationStr: string | null): string {
+  if (!durationStr) return '00:00:00';
+  
+  // If already formatted, return as is
+  if (durationStr.includes(':')) {
+    return durationStr;
+  }
+  
+  // Parse as seconds and format
+  const totalSeconds = parseFloat(durationStr);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+  
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+// Helper to format datetime
+function formatDateTime(dateStr: string | null): string {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
 export function TimeEntriesTable({
   entries,
-  editingEntry,
-  editDescription,
-  setEditDescription,
   onEdit,
-  onSaveEdit,
-  onCancelEdit,
   onDelete,
   currentPage,
   totalPages,
@@ -57,55 +79,33 @@ export function TimeEntriesTable({
               entries.map((entry) => (
                 <tr key={entry.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm text-gray-900">
-                    {editingEntry === entry.id ? (
-                      <input
-                        type="text"
-                        value={editDescription}
-                        onChange={(e) => setEditDescription(e.target.value)}
-                        className="w-full px-2 py-1 border rounded text-black"
-                      />
-                    ) : (
-                      entry.description
-                    )}
+                    {entry.description || '-'}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
-                    {entry.project?.name || "No project"}
+                    {entry.project_name || "No project"}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{entry.start_time}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{entry.end_time || '-'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{entry.duration}</td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {formatDateTime(entry.start_time)}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {formatDateTime(entry.end_time)}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900 font-mono">
+                    {entry.duration_str || formatDuration(entry.duration)}
+                  </td>
                   <td className="px-6 py-4 text-sm flex gap-2">
-                    {editingEntry === entry.id ? (
-                      <>
-                        <button
-                          onClick={() => onSaveEdit(entry.id)}
-                          className="text-green-600 hover:text-green-800 font-medium"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={onCancelEdit}
-                          className="text-gray-600 hover:text-gray-800 font-medium"
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => onEdit(entry)}
-                          className="text-blue-600 hover:text-blue-800 font-medium"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => onDelete(entry.id)}
-                          className="text-red-600 hover:text-red-800 font-medium"
-                        >
-                          Delete
-                        </button>
-                      </>
-                    )}
+                    <button
+                      onClick={() => onEdit(entry)}
+                      className="text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => onDelete(entry.id)}
+                      className="text-red-600 hover:text-red-800 font-medium"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))
@@ -119,7 +119,7 @@ export function TimeEntriesTable({
           <button
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="px-4 py-2 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-900 rounded-md hover:bg-gray-200 disabled:opacity-50"
           >
             Previous
           </button>
@@ -130,7 +130,7 @@ export function TimeEntriesTable({
               className={`px-4 py-2 rounded-md ${
                 currentPage === i + 1
                   ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 hover:bg-gray-200'
+                  : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
               }`}
             >
               {i + 1}
@@ -139,7 +139,7 @@ export function TimeEntriesTable({
           <button
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-900 rounded-md hover:bg-gray-200 disabled:opacity-50"
           >
             Next
           </button>

@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
 
-First, run the development server:
+# 🚀 Tickr Frontend
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+This is the official frontend repository for the **Tickr** application, built using **Next.js 14** and initialized with `create-next-app`.
+
+## ⚙️ Setup and Installation
+
+Follow these quick steps to get the project running locally.
+
+### 1\. Environment Configuration
+
+Create a file named **`.env.local`** in the project root to define necessary environment variables:
+
+```
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api
+NEXT_PUBLIC_FRONTEND_URL=http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Run Locally
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Start the development server using your preferred package manager:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
 
-## Learn More
+npm run dev
+# or yarn dev, pnpm dev, bun dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+The application will be available at **[http://localhost:3000](https://www.google.com/search?q=http://localhost:3000)**. The development server supports hot reloading for immediate feedback on code changes.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+-----
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+##  Key Features
 
-## Deploy on Vercel
+  * **Framework:** Built on the latest features of [Next.js](https://nextjs.org/docs).
+  * **API Integration:** Connects to the backend service via the defined `NEXT_PUBLIC_API_URL`.
+  * **Typography:** Optimized and loads the modern [Geist](https://vercel.com/font) font family using `next/font`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+##  Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The easiest deployment method is via the **[Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme)**. Refer to the [Next.js Deployment Documentation](https://nextjs.org/docs/app/building-your-application/deploying) for details.
+

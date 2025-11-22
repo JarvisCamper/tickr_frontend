@@ -29,7 +29,8 @@ export default function Navbar() {
   const fetchUserInfo = async () => {
     try {
       const token = Cookies.get('access_token');
-      const response = await fetch('http://127.0.0.1:8000/api/user/', {
+      const { getApiUrl } = await import('@/constant/apiendpoints');
+      const response = await fetch(getApiUrl('user/'), {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,

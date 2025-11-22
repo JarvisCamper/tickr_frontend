@@ -1,3 +1,4 @@
+//app/teams/page.tsx
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -17,8 +18,11 @@ import { AssignProjectModal } from "./components/AssignProjectModel";
 
 export default function TeamsPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const { showToast } = useToast();
+  
+  console.log("TeamsPage - Current user:", user);
+  
   const {
     teams,
     projects,
@@ -32,6 +36,7 @@ export default function TeamsPage() {
     generateInviteLink,
     assignProject,
     unassignProject,
+    removeTeamMember,
   } = useTeams();
 
   // Modal states
@@ -61,7 +66,12 @@ export default function TeamsPage() {
 
   const handleDeleteTeam = async (teamId: number) => {
     if (confirm("Are you sure you want to delete this team?")) {
-      await deleteTeam(teamId);
+      try {
+        await deleteTeam(teamId);
+        showToast("Team deleted successfully", "success");
+      } catch (error) {
+        showToast("Failed to delete team", "error");
+      }
     }
   };
 
@@ -83,17 +93,53 @@ export default function TeamsPage() {
 
   const handleGenerateLink = async () => {
     if (!selectedTeam) return;
-    setShowInviteOptionsModal(false);
-    const link = await generateInviteLink(selectedTeam.id);
-    if (link) {
-      setInvitationLink(link);
-      setShowInviteLinkModal(true);
+    try {
+      setShowInviteOptionsModal(false);
+      const link = await generateInviteLink(selectedTeam.id);
+      if (link) {
+        setInvitationLink(link);
+        setShowInviteLinkModal(true);
+      }
+    } catch (error) {
+      showToast("Failed to generate invite link", "error");
     }
   };
 
   const handleAssignProject = (team: Team) => {
     setSelectedTeam(team);
     setShowAssignModal(true);
+  };
+
+  // Wrapper for assignProject with better error handling
+  const handleAssignProjectSubmit = async (teamId: number, projectId: number) => {
+    console.log("🟢 handleAssignProjectSubmit called with:", { teamId, projectId });
+    try {
+      const result = await assignProject(teamId, projectId);
+      console.log("🟢 Assignment result:", result);
+      
+      // Refresh BOTH teams and projects to update the UI
+      console.log("🔄 Refreshing teams and projects...");
+      await Promise.all([fetchTeams(), fetchProjects()]);
+      console.log("✅ Refresh complete - Teams:", teams.length, "Projects:", projects.length);
+      
+      showToast("Project assigned successfully!", "success");
+      return result;
+    } catch (error) {
+      console.error("🔴 Assignment failed:", error);
+      showToast(error instanceof Error ? error.message : "Failed to assign project", "error");
+      throw error;
+    }
+  };
+
+  // Wrapper for unassignProject with better error handling
+  const handleUnassignProject = async (teamId: number, projectId: number) => {
+    try {
+      await unassignProject(teamId, projectId);
+      showToast("Project unassigned successfully!", "success");
+      await fetchProjects();
+    } catch (error) {
+      showToast("Failed to unassign project", "error");
+    }
   };
 
   const copyInvitationLink = () => {
@@ -151,6 +197,7 @@ export default function TeamsPage() {
                 key={team.id}
                 team={team}
                 projects={projects}
+                currentUserId={user?.id}
                 onViewMembers={handleViewMembers}
                 onViewProjects={handleViewProjects}
                 onInvite={handleInvite}
@@ -190,7 +237,17 @@ export default function TeamsPage() {
           isOpen={showMembersModal}
           team={selectedTeam}
           members={teamMembers}
+          currentUserId={user?.id}
           onClose={() => setShowMembersModal(false)}
+          onRemoveMember={async (teamId, userId) => {
+            try {
+              await removeTeamMember(teamId, userId);
+              await fetchTeamMembers(teamId);
+              showToast("Member removed successfully", "success");
+            } catch (error) {
+              showToast("Failed to remove member", "error");
+            }
+          }}
         />
 
         <ViewProjectsModal
@@ -198,7 +255,7 @@ export default function TeamsPage() {
           team={selectedTeam}
           projects={projects}
           onClose={() => setShowProjectsModal(false)}
-          onUnassign={unassignProject}
+          onUnassign={(projectId) => selectedTeam && handleUnassignProject(selectedTeam.id, projectId)}
         />
 
         <AssignProjectModal
@@ -206,7 +263,7 @@ export default function TeamsPage() {
           team={selectedTeam}
           projects={projects}
           onClose={() => setShowAssignModal(false)}
-          onAssign={assignProject}
+          onAssign={handleAssignProjectSubmit}
           isLoading={isLoading}
         />
       </div>
