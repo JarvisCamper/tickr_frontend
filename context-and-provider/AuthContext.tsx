@@ -45,7 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/user/', {
+      const { getApiUrl } = await import('@/constant/apiendpoints');
+      const response = await fetch(getApiUrl('user/'), {
         headers: getAuthHeaders(),
       });
       if (response.ok) {
@@ -82,6 +83,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchUser();
+    
+    // Listen for auth changes 
+    const handleAuthChange = () => {
+      fetchUser();
+    };
+    
+    window.addEventListener('auth-changed', handleAuthChange);
+    
+    return () => {
+      window.removeEventListener('auth-changed', handleAuthChange);
+    };
   }, []);
 
   return (

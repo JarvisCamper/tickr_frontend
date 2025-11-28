@@ -1,11 +1,13 @@
 "use client";
 import { useState, ChangeEvent, FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Cookies from "js-cookie";
+import { getApiUrl } from "@/constant/apiendpoints";
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,7 +30,7 @@ export default function SignupPage() {
     }
 
     try {
-      const signupResponse = await fetch("http://127.0.0.1:8000/api/signup/", {
+      const signupResponse = await fetch(getApiUrl("signup/"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, password, password2 }),
@@ -39,7 +41,7 @@ export default function SignupPage() {
         throw new Error(errorData.email?.[0] || errorData.username?.[0] || "Signup failed");
       }
 
-      const loginResponse = await fetch("http://127.0.0.1:8000/api/login/", {
+      const loginResponse = await fetch(getApiUrl("login/"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -53,7 +55,12 @@ export default function SignupPage() {
       Cookies.set("access_token", loginData.access_token, { expires: 7 });
       Cookies.set("refresh_token", loginData.refresh_token, { expires: 7 });
       window.dispatchEvent(new Event("auth-changed"));
-      router.push("/timer");
+      
+      // Get redirect URL from query params or default to teams
+      const redirectTo = searchParams.get("redirect") || "/teams";
+      
+      // Use window.location for reliable redirect after signup
+      window.location.href = redirectTo;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Signup failed. Please try again.";
       setError(errorMessage);
@@ -164,7 +171,12 @@ export default function SignupPage() {
 
             <div className="text-base text-gray-700">
               <p className="mb-2">Already have an account?</p>
-              <Link href="/login" className="text-blue-600 hover:underline">Log in here</Link>
+              <Link 
+                href={searchParams.get("redirect") ? `/login?redirect=${encodeURIComponent(searchParams.get("redirect")!)}` : "/login"} 
+                className="text-blue-600 hover:underline"
+              >
+                Log in here
+              </Link>
             </div>
           </form>
         </div>

@@ -7,7 +7,7 @@ interface AssignProjectModalProps {
   team: Team | null;
   projects: Project[];
   onClose: () => void;
-  onAssign: (projectId: number, teamId: number) => Promise<boolean>;
+  onAssign: (teamId: number, projectId: number) => Promise<boolean>;
   isLoading: boolean;
 }
 
@@ -20,17 +20,28 @@ export function AssignProjectModal({
   isLoading,
 }: AssignProjectModalProps) {
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [assigning, setAssigning] = useState(false);
 
   if (!isOpen || !team) return null;
 
   const unassignedProjects = projects.filter((p) => !p.team_id || p.type === "individual");
 
   const handleAssign = async () => {
-    if (!selectedProjectId) return;
-    const success = await onAssign(selectedProjectId, team.id);
-    if (success) {
-      setSelectedProjectId(null);
-      onClose();
+    if (!selectedProjectId || !team) return;
+    
+    try {
+      setAssigning(true);
+      // Correct order: teamId first, then projectId
+      const success = await onAssign(team.id, selectedProjectId);
+      if (success) {
+        setSelectedProjectId(null);
+        onClose();
+      }
+    } catch (error) {
+      console.error("Failed to assign project:", error);
+      // You might want to show an error toast here
+    } finally {
+      setAssigning(false);
     }
   };
 
@@ -69,14 +80,15 @@ export function AssignProjectModal({
         <div className="flex gap-2">
           <button
             onClick={handleAssign}
-            disabled={isLoading || !selectedProjectId}
+            disabled={isLoading || assigning || !selectedProjectId}
             className="flex-1 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
-            {isLoading ? "Assigning..." : "Assign Project"}
+            {assigning ? "Assigning..." : "Assign Project"}
           </button>
           <button
             onClick={handleClose}
-            className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors"
+            disabled={assigning}
+            className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>

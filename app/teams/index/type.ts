@@ -1,4 +1,4 @@
-// teams/types.ts
+// teams/index/type.ts
 
 export interface Team {
   id: number;
@@ -9,18 +9,24 @@ export interface Team {
     username: string;
     email: string;
   };
+  owner_username: string;
+  members: TeamMember[];
   member_count: number;
   created_at: string;
 }
 
 export interface TeamMember {
   id: number;
-  user: {
+  user_id: number;
+  email: string;
+  username: string;
+  role: 'member' | 'owner';
+  joined_at: string;
+  user?: {
     id: number;
     username: string;
     email: string;
   };
-  joined_at: string;
 }
 
 export interface Project {
@@ -29,5 +35,9 @@ export interface Project {
   description: string;
   type: string;
   team_id: number | null;
+  team?: {
+    id: number;
+    name: string;
+  } | null;
   created_at: string;
 }

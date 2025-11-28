@@ -4,26 +4,27 @@ import { useRouter } from "next/navigation";
 import { TimeControl } from './components/TimeControl';  
 import { TimeEntriesTable } from './components/TimeEntriesTable';
 import { ProjectModal } from './components/ProjectModal';
+import { EditEntryModal } from './components/EditEntryModel';
 import { useTimer } from './hooks/useTimer';
 import { useToast } from "../../context-and-provider";
 import { useAuth } from "../../context-and-provider/AuthContext";
 import { TimeEntry, Project } from './types';
-
-const API_BASE_URL = "http://127.0.0.1:8000/api";
+import { getApiUrl } from '@/constant/apiendpoints';
 
 export default function TimerPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { time, isRunning, formatTime, startTimer, stopTimer, getAuthHeaders } = useTimer();
+  const { time, isRunning, isPaused, formatTime, startTimer, pauseTimer, resumeTimer, stopTimer, getAuthHeaders } = useTimer();
   const { showToast } = useToast();
   
   const [description, setDescription] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [activeEntryId, setActiveEntryId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [editingEntry, setEditingEntry] = useState<number | null>(null);
-  const [editDescription, setEditDescription] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +47,7 @@ export default function TimerPage() {
 
   const checkActiveTimer = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/entries/active/`, {
+      const response = await fetch(getApiUrl("entries/active/"), {
         headers: getAuthHeaders(),
       });
       if (response.ok) {
@@ -54,7 +55,15 @@ export default function TimerPage() {
         if (data && data.is_running) {
           setDescription(data.description);
           setSelectedProjectId(data.project?.id || null);
-          startTimer();
+          setActiveEntryId(data.id || null);
+          // If backend provides a start timestamp, use it to compute elapsed so timer continues correctly across reloads
+          if (data.started_at) {
+            startTimer(data.started_at);
+          } else if (data.start_time) {
+            startTimer(data.start_time);
+          } else {
+            startTimer();
+          }
         }
       }
     } catch (error) {
@@ -62,9 +71,32 @@ export default function TimerPage() {
     }
   };
 
+  // When description or project changes while timer is running, PATCH the active entry so server stores latest values
+  useEffect(() => {
+    const updateActive = async () => {
+      if (!isRunning || !activeEntryId) return;
+      try {
+        const payload: any = {};
+        if (description !== undefined) payload.description = description;
+        if (selectedProjectId !== undefined) payload.project_id = selectedProjectId;
+
+        await fetch(getApiUrl(`entries/${activeEntryId}/`), {
+          method: 'PATCH',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload),
+        });
+      } catch (err) {
+        console.error('Failed to update active entry:', err);
+      }
+    };
+
+    // Fire update (no debounce for simplicity). This updates server-side active entry so final saved entry uses latest description/project.
+    updateActive();
+  }, [description, selectedProjectId, isRunning, activeEntryId]);
+
   const fetchProjects = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/projects/`, {
+      const response = await fetch(getApiUrl("projects/"), {
         headers: getAuthHeaders(),
       });
       if (response.ok) {
@@ -82,7 +114,7 @@ export default function TimerPage() {
 
   const fetchTimeEntries = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/entries/`, {
+      const response = await fetch(getApiUrl("entries/"), {
         headers: getAuthHeaders(),
       });
       if (response.ok) {
@@ -113,19 +145,40 @@ export default function TimerPage() {
         payload.project_id = selectedProjectId;
       }
 
-      const response = await fetch(`${API_BASE_URL}/entries/start/`, {
+      const response = await fetch(getApiUrl("entries/start/"), {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(payload),
-      });
+      }); 
+      const d = await response.json().catch(() => null);
 
       if (response.ok) {
-        startTimer();
+        // Use server-provided start timestamp if available so elapsed is consistent
+        const serverStart = d?.started_at || d?.start_time;
+        startTimer(serverStart);
+        // If server returns created entry with id, track it so we can update it while running
+        if (d && d.id) {
+          setActiveEntryId(d.id);
+        } else {
+          // attempt to fetch active entry to obtain id/start time
+          try {
+            const activeResp = await fetch(getApiUrl('entries/active/'), { headers: getAuthHeaders() });
+            if (activeResp.ok) {
+              const activeData = await activeResp.json().catch(() => null);
+              if (activeData) {
+                if (activeData.id) setActiveEntryId(activeData.id);
+                const srvStart = activeData.started_at || activeData.start_time;
+                if (srvStart) startTimer(srvStart);
+              }
+            }
+          } catch (err) {
+            // ignore
+          }
+        }
         showToast("Timer started!", "success");
       } else {
-        const errorData = await response.json();
-        console.error("Start timer error:", errorData);
-        showToast(errorData.detail || "Failed to start timer", "error");
+        console.error("Start timer error:", d);
+        showToast(d?.detail || "Failed to start timer", "error");
       }
     } catch (error) {
       console.error("Error starting timer:", error);
@@ -135,13 +188,14 @@ export default function TimerPage() {
 
   const handleStop = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/entries/stop/`, {
+      const response = await fetch(getApiUrl("entries/stop/"), {
         method: "POST",
         headers: getAuthHeaders(),
       });
 
       if (response.ok) {
         stopTimer();
+        setActiveEntryId(null);
         setDescription("");
         setSelectedProjectId(null);
         fetchTimeEntries();
@@ -170,7 +224,7 @@ export default function TimerPage() {
         type: "individual",
       };
 
-      const response = await fetch(`${API_BASE_URL}/projects/`, {
+      const response = await fetch(getApiUrl("projects/"), {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(payload),
@@ -179,6 +233,8 @@ export default function TimerPage() {
       if (response.ok) {
         const data = await response.json();
         setProjects([...projects, data]);
+        // select the newly created project so user can attach running timer to it immediately
+        if (data && data.id) setSelectedProjectId(data.id);
         setNewProjectName("");
         setShowProjectModal(false);
         showToast("Project created successfully!", "success");
@@ -196,20 +252,21 @@ export default function TimerPage() {
   };
 
   const handleEdit = (entry: TimeEntry) => {
-    setEditingEntry(entry.id);
-    setEditDescription(entry.description);
+    setEditingEntry(entry);
+    setShowEditModal(true);
   };
 
-  const handleSaveEdit = async (entryId: number) => {
+  const handleSaveEdit = async (entryId: number, updates: Partial<TimeEntry>) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/entries/${entryId}/`, {
+      const response = await fetch(getApiUrl(`entries/${entryId}/`), {
         method: "PATCH",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ description: editDescription.trim() }),
+        body: JSON.stringify(updates),
       });
 
       if (response.ok) {
         fetchTimeEntries();
+        setShowEditModal(false);
         setEditingEntry(null);
         showToast("Entry updated!", "success");
       } else {
@@ -227,7 +284,7 @@ export default function TimerPage() {
     if (!confirm("Are you sure you want to delete this entry?")) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/entries/${id}/`, {
+      const response = await fetch(getApiUrl(`entries/${id}/`), {
         method: "DELETE",
         headers: getAuthHeaders(),
       });
@@ -275,19 +332,17 @@ export default function TimerPage() {
           time={time}
           formatTime={formatTime}
           isRunning={isRunning}
+          isPaused={isPaused}
           onStart={handleStart}
+          onPause={pauseTimer}
+          onResume={resumeTimer}
           onStop={handleStop}
           onAddProject={() => setShowProjectModal(true)}
         />
 
         <TimeEntriesTable
           entries={currentEntries}
-          editingEntry={editingEntry}
-          editDescription={editDescription}
-          setEditDescription={setEditDescription}
           onEdit={handleEdit}
-          onSaveEdit={handleSaveEdit}
-          onCancelEdit={() => setEditingEntry(null)}
           onDelete={handleDelete}
           currentPage={currentPage}
           totalPages={totalPages}
@@ -304,6 +359,17 @@ export default function TimerPage() {
           }}
           onCreate={handleCreateProject}
           isLoading={isLoading}
+        />
+
+        <EditEntryModal
+          isOpen={showEditModal}
+          entry={editingEntry}
+          projects={projects}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingEntry(null);
+          }}
+          onSave={handleSaveEdit}
         />
       </div>
     </div>

@@ -12,7 +12,10 @@ interface TimerControlProps {
   time: number;
   formatTime: (seconds: number) => string;
   isRunning: boolean;
+  isPaused: boolean;
   onStart: () => void;
+  onPause: () => void;
+  onResume: () => void;
   onStop: () => void;
   onAddProject: () => void;
 }
@@ -26,7 +29,10 @@ export function TimeControl({
   time,
   formatTime,
   isRunning,
+  isPaused,
   onStart,
+  onPause,
+  onResume,
   onStop,
   onAddProject,
 }: TimerControlProps) {
@@ -39,7 +45,6 @@ export function TimeControl({
           onChange={(e) => setDescription(e.target.value)}
           placeholder="What are you working on? *"
           className="flex-1 min-w-[200px] px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-          disabled={isRunning}
         />
 
         <div className="flex items-center gap-2">
@@ -56,7 +61,6 @@ export function TimeControl({
           <button
             onClick={onAddProject}
             className="px-3 py-3 text-blue-600 hover:bg-blue-50 rounded-md"
-            disabled={isRunning}
           >
             + New Project
           </button>
