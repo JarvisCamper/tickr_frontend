@@ -10,10 +10,10 @@ export default function Footer() {
             © 2025 Tickr. All rights reserved.
           </div>
           <div className="flex space-x-6 text-sm">
-            <Link href="#privacy" className="hover:text-blue-400">Privacy Policy</Link>
-            <Link href="#terms" className="hover:text-blue-400">Terms of Service</Link>
-            <Link href="#contact" className="hover:text-blue-400">Contact</Link>
-          </div>
+              <Link href="/PNP" className="hover:text-blue-400">Privacy Policy</Link>
+              <Link href="/TNS" className="hover:text-blue-400">Terms of Service</Link>
+              <Link href="/Contact" className="hover:text-blue-400">Contact</Link>
+            </div>
         </div>
       </div>
     </footer>

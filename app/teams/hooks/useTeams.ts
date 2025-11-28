@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Cookies from "js-cookie";
 import { Team, TeamMember, Project } from "../index/type";
-import { API_BASE_URL, getApiUrl } from "@/constant/apiendpoints";
+import { getApiUrl } from "@/constant/apiendpoints";
 
 const getAuthHeaders = () => {
   if (typeof window === "undefined") {
@@ -29,6 +29,40 @@ const checkAuth = () => {
   return true;
 };
 
+// Helper function to normalize project data structure
+const normalizeProject = (project: any): Project => {
+  return {
+    ...project,
+    team_id: project.team?.id ?? project.team_id ?? null,
+    team: project.team ?? (project.team_id ? { 
+      id: project.team_id, 
+      name: project.team_name || '' 
+    } : null)
+  };
+};
+
+// Helper function to ensure owner is in members array
+const ensureOwnerInMembers = (team: Team): Team => {
+  if (!team.members) {
+    team.members = [];
+  }
+  
+  const ownerInMembers = team.members.some(m => m.user_id === team.owner.id);
+  
+  if (!ownerInMembers) {
+    team.members.unshift({
+      id: -1,
+      user_id: team.owner.id,
+      username: team.owner.username,
+      email: team.owner.email,
+      role: 'owner',
+      joined_at: team.created_at
+    });
+  }
+  
+  return team;
+};
+
 export function useTeams() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -50,28 +84,7 @@ export function useTeams() {
       }
 
       const data = await response.json();
-      
-      // Process teams to ensure owner is in members array
-      const processedTeams = data.map((team: Team) => {
-        if (!team.members) {
-          team.members = [];
-        }
-        
-        const ownerInMembers = team.members.some(m => m.user_id === team.owner.id);
-        
-        if (!ownerInMembers) {
-          team.members.unshift({
-            id: -1,
-            user_id: team.owner.id,
-            username: team.owner.username,
-            email: team.owner.email,
-            role: 'owner',
-            joined_at: team.created_at
-          });
-        }
-        
-        return team;
-      });
+      const processedTeams = data.map(ensureOwnerInMembers);
       
       // Try to fetch joined teams
       let allTeams = processedTeams;
@@ -82,24 +95,7 @@ export function useTeams() {
         
         if (joinedResponse.ok) {
           const joinedData = await joinedResponse.json();
-          
-          const processedJoined = joinedData.map((team: Team) => {
-            if (!team.members) {
-              team.members = [];
-            }
-            const ownerInMembers = team.members.some(m => m.user_id === team.owner.id);
-            if (!ownerInMembers) {
-              team.members.unshift({
-                id: -1,
-                user_id: team.owner.id,
-                username: team.owner.username,
-                email: team.owner.email,
-                role: 'owner',
-                joined_at: team.created_at
-              });
-            }
-            return team;
-          });
+          const processedJoined = joinedData.map(ensureOwnerInMembers);
           
           const ownedIds = new Set(processedTeams.map((t: Team) => t.id));
           allTeams = [
@@ -109,6 +105,7 @@ export function useTeams() {
         }
       } catch (err) {
         // Silently ignore if endpoint doesn't exist
+        console.warn("Joined teams endpoint not available:", err);
       }
       
       setTeams(allTeams);
@@ -135,22 +132,16 @@ export function useTeams() {
       }
 
       const data = await response.json();
-      
-      // Normalize project data: extract team_id from team object if needed
-      const normalizedProjects = data.map((p: any) => ({
-        ...p,
-        team_id: p.team_id !== undefined ? p.team_id : (p.team ? p.team.id : null),
-        team: p.team || (p.team_id ? { id: p.team_id, name: p.team_name || '' } : null)
-      }));
+      const normalizedProjects = data.map(normalizeProject);
       
       console.log("📦 Projects fetched:", normalizedProjects.length);
-      console.log("📦 ALL Projects data:", JSON.stringify(normalizedProjects, null, 2));
-      console.log("📦 Projects with teams:", normalizedProjects.filter((p: Project) => p.team_id || p.team).map((p: Project) => ({
+      console.log("📦 Projects with teams:", normalizedProjects.filter((p: Project) => p.team_id).map((p: Project) => ({
         id: p.id,
         name: p.name,
         team_id: p.team_id,
         team: p.team
       })));
+      
       setProjects(normalizedProjects);
     } catch (err) {
       console.error("Error fetching projects:", err);
@@ -175,8 +166,9 @@ export function useTeams() {
       }
 
       const newTeam = await response.json();
-      setTeams((prevTeams) => [...prevTeams, newTeam]);
-      return newTeam;
+      const processedTeam = ensureOwnerInMembers(newTeam);
+      setTeams((prevTeams) => [...prevTeams, processedTeam]);
+      return processedTeam;
     } catch (error) {
       console.error("Error creating team:", error);
       throw error;
@@ -227,17 +219,20 @@ export function useTeams() {
                        data.invitation_code ||
                        data.code;
       
-      if (inviteLink && !inviteLink.includes('http') && !inviteLink.includes('/')) {
+      if (!inviteLink) {
+        throw new Error("Invitation created but no link returned by server");
+      }
+
+      // Normalize the invite link format
+      if (!inviteLink.includes('http') && !inviteLink.includes('/')) {
+        // Just the code
         const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
         inviteLink = `${baseUrl}/teams/AcceptInvite/${inviteLink}`;
-      } else if (inviteLink && !inviteLink.includes('http')) {
+      } else if (!inviteLink.includes('http')) {
+        // Relative path
         inviteLink = inviteLink.replace('/teams/accept-invite/', '/teams/AcceptInvite/');
         const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
         inviteLink = `${baseUrl}${inviteLink.startsWith('/') ? inviteLink : '/' + inviteLink}`;
-      }
-      
-      if (!inviteLink) {
-        throw new Error("Invitation created but no link returned by server");
       }
 
       return inviteLink;
@@ -250,12 +245,10 @@ export function useTeams() {
   // Fetch team members
   const fetchTeamMembers = async (teamId: number): Promise<TeamMember[]> => {
     try {
-      const teamIndex = teams.findIndex(t => t.id === teamId);
-      if (teamIndex === -1) {
+      const team = teams.find(t => t.id === teamId);
+      if (!team) {
         throw new Error("Team not found");
       }
-      
-      const team = teams[teamIndex];
       
       const response = await fetch(getApiUrl(`teams/${teamId}/members/`), {
         headers: getAuthHeaders(),
@@ -318,7 +311,6 @@ export function useTeams() {
       const fullUrl = getApiUrl(endpoint);
       
       console.log("🔵 Assigning project:", { teamId, projectId });
-      console.log("🔵 Endpoint:", endpoint);
       console.log("🔵 Full URL:", fullUrl);
       
       const response = await fetch(fullUrl, {
@@ -340,16 +332,7 @@ export function useTeams() {
 
       // Immediately update the project in state with normalized data
       if (responseData.project) {
-        const updatedProject: Project = {
-          ...responseData.project,
-          team_id: responseData.project.team_id !== undefined 
-            ? responseData.project.team_id 
-            : (responseData.project.team ? responseData.project.team.id : null),
-          team: responseData.project.team || (responseData.project.team_id ? { 
-            id: responseData.project.team_id, 
-            name: responseData.project.team_name || '' 
-          } : null)
-        };
+        const updatedProject = normalizeProject(responseData.project);
         
         setProjects((prevProjects) => 
           prevProjects.map((p) => p.id === updatedProject.id ? updatedProject : p)

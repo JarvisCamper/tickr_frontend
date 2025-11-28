@@ -5,6 +5,7 @@ interface ViewProjectsModalProps {
   isOpen: boolean;
   team: Team | null;
   projects: Project[];
+  currentUserId?: number | null;
   onClose: () => void;
   onUnassign: (projectId: number) => void;
 }
@@ -13,6 +14,7 @@ export function ViewProjectsModal({
   isOpen,
   team,
   projects,
+  currentUserId,
   onClose,
   onUnassign,
 }: ViewProjectsModalProps) {
@@ -60,13 +62,15 @@ export function ViewProjectsModal({
                     <div className="text-sm text-gray-500 mt-1">{project.description}</div>
                   )}
                 </div>
-                <button
-                  onClick={() => handleUnassign(project.id)}
-                  className="ml-4 text-red-500 hover:text-red-700 text-sm"
-                  title="Unassign project"
-                >
-                  Unassign
-                </button>
+                {team && team.owner && currentUserId === team.owner.id ? (
+                  <button
+                    onClick={() => handleUnassign(project.id)}
+                    className="ml-4 text-red-500 hover:text-red-700 text-sm"
+                    title="Unassign project"
+                  >
+                    Unassign
+                  </button>
+                ) : null}
               </div>
             ))}
           </div>

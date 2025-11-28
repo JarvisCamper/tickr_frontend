@@ -14,13 +14,14 @@ import { getApiUrl } from '@/constant/apiendpoints';
 export default function TimerPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { time, isRunning, formatTime, startTimer, stopTimer, getAuthHeaders } = useTimer();
+  const { time, isRunning, isPaused, formatTime, startTimer, pauseTimer, resumeTimer, stopTimer, getAuthHeaders } = useTimer();
   const { showToast } = useToast();
   
   const [description, setDescription] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [activeEntryId, setActiveEntryId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
@@ -54,13 +55,44 @@ export default function TimerPage() {
         if (data && data.is_running) {
           setDescription(data.description);
           setSelectedProjectId(data.project?.id || null);
-          startTimer();
+          setActiveEntryId(data.id || null);
+          // If backend provides a start timestamp, use it to compute elapsed so timer continues correctly across reloads
+          if (data.started_at) {
+            startTimer(data.started_at);
+          } else if (data.start_time) {
+            startTimer(data.start_time);
+          } else {
+            startTimer();
+          }
         }
       }
     } catch (error) {
       console.error("Failed to check active timer:", error);
     }
   };
+
+  // When description or project changes while timer is running, PATCH the active entry so server stores latest values
+  useEffect(() => {
+    const updateActive = async () => {
+      if (!isRunning || !activeEntryId) return;
+      try {
+        const payload: any = {};
+        if (description !== undefined) payload.description = description;
+        if (selectedProjectId !== undefined) payload.project_id = selectedProjectId;
+
+        await fetch(getApiUrl(`entries/${activeEntryId}/`), {
+          method: 'PATCH',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload),
+        });
+      } catch (err) {
+        console.error('Failed to update active entry:', err);
+      }
+    };
+
+    // Fire update (no debounce for simplicity). This updates server-side active entry so final saved entry uses latest description/project.
+    updateActive();
+  }, [description, selectedProjectId, isRunning, activeEntryId]);
 
   const fetchProjects = async () => {
     try {
@@ -117,15 +149,36 @@ export default function TimerPage() {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(payload),
-      });
+      }); 
+      const d = await response.json().catch(() => null);
 
       if (response.ok) {
-        startTimer();
+        // Use server-provided start timestamp if available so elapsed is consistent
+        const serverStart = d?.started_at || d?.start_time;
+        startTimer(serverStart);
+        // If server returns created entry with id, track it so we can update it while running
+        if (d && d.id) {
+          setActiveEntryId(d.id);
+        } else {
+          // attempt to fetch active entry to obtain id/start time
+          try {
+            const activeResp = await fetch(getApiUrl('entries/active/'), { headers: getAuthHeaders() });
+            if (activeResp.ok) {
+              const activeData = await activeResp.json().catch(() => null);
+              if (activeData) {
+                if (activeData.id) setActiveEntryId(activeData.id);
+                const srvStart = activeData.started_at || activeData.start_time;
+                if (srvStart) startTimer(srvStart);
+              }
+            }
+          } catch (err) {
+            // ignore
+          }
+        }
         showToast("Timer started!", "success");
       } else {
-        const errorData = await response.json();
-        console.error("Start timer error:", errorData);
-        showToast(errorData.detail || "Failed to start timer", "error");
+        console.error("Start timer error:", d);
+        showToast(d?.detail || "Failed to start timer", "error");
       }
     } catch (error) {
       console.error("Error starting timer:", error);
@@ -142,6 +195,7 @@ export default function TimerPage() {
 
       if (response.ok) {
         stopTimer();
+        setActiveEntryId(null);
         setDescription("");
         setSelectedProjectId(null);
         fetchTimeEntries();
@@ -179,6 +233,8 @@ export default function TimerPage() {
       if (response.ok) {
         const data = await response.json();
         setProjects([...projects, data]);
+        // select the newly created project so user can attach running timer to it immediately
+        if (data && data.id) setSelectedProjectId(data.id);
         setNewProjectName("");
         setShowProjectModal(false);
         showToast("Project created successfully!", "success");
@@ -276,7 +332,10 @@ export default function TimerPage() {
           time={time}
           formatTime={formatTime}
           isRunning={isRunning}
+          isPaused={isPaused}
           onStart={handleStart}
+          onPause={pauseTimer}
+          onResume={resumeTimer}
           onStop={handleStop}
           onAddProject={() => setShowProjectModal(true)}
         />

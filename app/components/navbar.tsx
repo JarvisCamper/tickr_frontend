@@ -1,5 +1,6 @@
 'use client'
 import React, { useState, useEffect } from 'react'
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
@@ -9,6 +10,7 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -39,6 +41,7 @@ export default function Navbar() {
       if (response.ok) {
         const data = await response.json();
         setUserEmail(data.email);
+        setUserAvatar(data.avatar || data.profile_picture || data.avatar_url || null);
       }
     } catch (error) {
       console.error('Failed to fetch user info:', error);
@@ -63,14 +66,14 @@ export default function Navbar() {
 
   const publicLinks = [
     { name: 'Features', href: '#features' },
-    { name: 'Contact', href: '#contact' },
+    { name: 'Contact', href: '/contact' },
   ];
   
   return (
     <nav className="fixed top-0 left-0 right-0 bg-white px-4 sm:px-8 py-4 shadow-md z-50">
       <div className="flex items-center justify-between">
-        <Link href="/" className="text-xl font-bold text-black">
-          Tickr
+      <Link href="/" className="flex items-center space-x-2">
+          <span className="text-xl font-bold text-black">Tickr</span>
         </Link>
         
         <button 
@@ -91,7 +94,13 @@ export default function Navbar() {
                   {link.name}
                 </Link>
               ))}
-              <span className="text-gray-600 text-sm">{userEmail}</span>
+              <Link href="/profile" className="flex items-center gap-2 text-gray-600 text-sm hover:underline">
+                {userAvatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={userAvatar} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
+                ) : null}
+                <span>{userEmail}</span>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
@@ -124,7 +133,13 @@ export default function Navbar() {
                   {link.name}
                 </Link>
               ))}
-              <div className="py-2 text-gray-600 text-sm">{userEmail}</div>
+              <Link href="/profile" className="py-2 text-gray-600 text-sm flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
+                {userAvatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={userAvatar} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
+                ) : null}
+                <span>{userEmail}</span>
+              </Link>
               <button onClick={() => { handleLogout(); setIsMenuOpen(false); }} className="w-full text-left py-2 text-red-600 hover:text-red-800">
                 Logout
               </button>

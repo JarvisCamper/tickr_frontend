@@ -62,7 +62,19 @@ export default function TeamsPage() {
       fetchTeams();
       fetchProjects();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchTeams, fetchProjects]);
+
+  const handleCreateTeam = async (name: string, description: string): Promise<boolean> => {
+    try {
+      await createTeam(name, description);
+      showToast("Team created successfully!", "success");
+      await fetchTeams(); // Refresh teams list
+      return true;
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Failed to create team", "error");
+      return false;
+    }
+  };
 
   const handleDeleteTeam = async (teamId: number) => {
     if (confirm("Are you sure you want to delete this team?")) {
@@ -112,20 +124,20 @@ export default function TeamsPage() {
 
   // Wrapper for assignProject with better error handling
   const handleAssignProjectSubmit = async (teamId: number, projectId: number) => {
-    console.log("🟢 handleAssignProjectSubmit called with:", { teamId, projectId });
+    console.log(" handleAssignProjectSubmit called with:", { teamId, projectId });
     try {
       const result = await assignProject(teamId, projectId);
-      console.log("🟢 Assignment result:", result);
+      console.log(" Assignment result:", result);
       
       // Refresh BOTH teams and projects to update the UI
-      console.log("🔄 Refreshing teams and projects...");
+      console.log(" Refreshing teams and projects...");
       await Promise.all([fetchTeams(), fetchProjects()]);
-      console.log("✅ Refresh complete - Teams:", teams.length, "Projects:", projects.length);
+      console.log(" Refresh complete - Teams:", teams.length, "Projects:", projects.length);
       
       showToast("Project assigned successfully!", "success");
       return result;
     } catch (error) {
-      console.error("🔴 Assignment failed:", error);
+      console.error(" Assignment failed:", error);
       showToast(error instanceof Error ? error.message : "Failed to assign project", "error");
       throw error;
     }
@@ -139,6 +151,16 @@ export default function TeamsPage() {
       await fetchProjects();
     } catch (error) {
       showToast("Failed to unassign project", "error");
+    }
+  };
+
+  const handleRemoveMember = async (teamId: number, userId: number) => {
+    try {
+      await removeTeamMember(teamId, userId);
+      await fetchTeamMembers(teamId);
+      showToast("Member removed successfully", "success");
+    } catch (error) {
+      showToast("Failed to remove member", "error");
     }
   };
 
@@ -212,7 +234,7 @@ export default function TeamsPage() {
         <CreateTeamModal
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
-          onCreate={createTeam}
+          onCreate={handleCreateTeam}
           isLoading={isLoading}
         />
 
@@ -239,21 +261,14 @@ export default function TeamsPage() {
           members={teamMembers}
           currentUserId={user?.id}
           onClose={() => setShowMembersModal(false)}
-          onRemoveMember={async (teamId, userId) => {
-            try {
-              await removeTeamMember(teamId, userId);
-              await fetchTeamMembers(teamId);
-              showToast("Member removed successfully", "success");
-            } catch (error) {
-              showToast("Failed to remove member", "error");
-            }
-          }}
+          onRemoveMember={handleRemoveMember}
         />
 
         <ViewProjectsModal
           isOpen={showProjectsModal}
           team={selectedTeam}
           projects={projects}
+          currentUserId={user?.id}
           onClose={() => setShowProjectsModal(false)}
           onUnassign={(projectId) => selectedTeam && handleUnassignProject(selectedTeam.id, projectId)}
         />
