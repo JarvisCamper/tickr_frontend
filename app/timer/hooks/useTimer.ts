@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect } from 'react';
 import Cookies from 'js-cookie';
 
 type StoredTimer = {
@@ -12,8 +12,8 @@ type StoredTimer = {
 const STORAGE_KEY = 'tickr_timer_state';
 
 export function useTimer() {
-  const [time, setTime] = useState(0);
-  const [elapsed, setElapsed] = useState(0); // accumulated seconds when not counting
+  const [totalTime, setTotalTime] = useState(0); // Displayed time (ticks live when running)
+  const [elapsed, setElapsed] = useState(0); // Accumulated on pause (for persistence)
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [lastStart, setLastStart] = useState<number | null>(null); // ms
@@ -37,12 +37,12 @@ export function useTimer() {
         isPaused: !!parsed.isPaused,
         lastStart: parsed.lastStart || null,
       };
-    } catch (err) {
+    } catch (_err) {
       return { elapsed: 0, isRunning: false, isPaused: false, lastStart: null };
     }
   };
 
-  const persist = (state?: Partial<StoredTimer>) => {
+  const persist = useCallback((state?: Partial<StoredTimer>) => {
     const toSave: StoredTimer = {
       elapsed: state?.elapsed ?? elapsed,
       isRunning: state?.isRunning ?? isRunning,
@@ -51,17 +51,18 @@ export function useTimer() {
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-    } catch (err) {
+    } catch (_err) {
       // ignore
     }
-  };
+  }, [elapsed, isRunning, isPaused, lastStart]);
 
-  const computeCurrentElapsed = () => {
+  // Derived current elapsed for non-running states (memoized, no effect sets)
+  const computeCurrentElapsed = useMemo(() => {
     if (isRunning && !isPaused && lastStart) {
       return elapsed + Math.floor((Date.now() - lastStart) / 1000);
     }
     return elapsed;
-  };
+  }, [elapsed, isRunning, isPaused, lastStart]);
 
   const startTimer = (serverStartedAt?: string | number) => {
     // Compute values synchronously so we can persist the exact start state (avoid setState timing races)
@@ -78,8 +79,9 @@ export function useTimer() {
       computed = 0;
     }
 
-    // Set local state
+    // Set local state (totalTime starts ticking from computed)
     setElapsed(computed);
+    setTotalTime(computed);
     setLastStart(nowMs);
     setIsRunning(true);
     setIsPaused(false);
@@ -93,7 +95,9 @@ export function useTimer() {
     const now = Date.now();
     const added = lastStart ? Math.floor((now - lastStart) / 1000) : 0;
     const newElapsed = elapsed + added;
+    const currentTotal = totalTime + added; // Sync total to current before pause
     setElapsed(newElapsed);
+    setTotalTime(currentTotal);
     setLastStart(null);
     setIsPaused(true);
     persist({ elapsed: newElapsed, isPaused: true, lastStart: null });
@@ -101,6 +105,8 @@ export function useTimer() {
 
   const resumeTimer = () => {
     if (!isRunning || !isPaused) return;
+    // On resume, reset totalTime to current elapsed (pause accumulated it)
+    setTotalTime(elapsed);
     setLastStart(Date.now());
     setIsPaused(false);
     persist({ lastStart: Date.now(), isPaused: false });
@@ -111,10 +117,11 @@ export function useTimer() {
     const now = Date.now();
     const added = (!isPaused && lastStart) ? Math.floor((now - lastStart) / 1000) : 0;
     const finalElapsed = elapsed + added;
+    const finalTotal = totalTime + added;
 
-    // show final elapsed immediately
+    // Freeze display at final
+    setTotalTime(finalTotal);
     setElapsed(finalElapsed);
-    setTime(finalElapsed);
 
     setIsRunning(false);
     setIsPaused(false);
@@ -124,7 +131,7 @@ export function useTimer() {
     // Clear stored state (reset) after a short delay so user sees final value briefly
     setTimeout(() => {
       setElapsed(0);
-      setTime(0);
+      setTotalTime(0);
       persist({ elapsed: 0, isRunning: false, isPaused: false, lastStart: null });
     }, 1200);
   };
@@ -140,44 +147,40 @@ export function useTimer() {
     return headers;
   };
 
-  // Restore from storage on mount
-  useEffect(() => {
+  // Restore from storage on mount (useLayoutEffect for sync init, batch sets)
+  useLayoutEffect(() => {
     try {
       const stored = readStored();
       setElapsed(stored.elapsed || 0);
       setIsRunning(stored.isRunning || false);
       setIsPaused(stored.isPaused || false);
       setLastStart(stored.lastStart || null);
-      // compute displayed time immediately
-      if (stored.isRunning && stored.lastStart) {
-        const computed = stored.elapsed + Math.floor((Date.now() - stored.lastStart) / 1000);
-        setTime(computed);
-      } else {
-        setTime(stored.elapsed || 0);
-      }
-    } catch (err) {
+      // Set initial totalTime based on stored (no compute here—let memo or interval handle)
+      setTotalTime(stored.elapsed || 0);
+    } catch (_err) {
       // ignore
     }
   }, []);
 
-  // Timer interval for live ticking when running and not paused
+  // Timer interval for live ticking when running and not paused (use updater for +1 tick)
   useEffect(() => {
     if (isRunning && !isPaused) {
-      // ensure any prior interval is cleared
+      // Ensure any prior interval is cleared
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      // Tick totalTime up by 1 each second (simple, performant updater)
       intervalRef.current = setInterval(() => {
-        setTime(computeCurrentElapsed());
+        setTotalTime((prev) => prev + 1);
       }, 1000);
     } else {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
-      // ensure displayed time reflects current elapsed
-      setTime(computeCurrentElapsed());
+      // When stopping interval, sync totalTime to computed (no cascading, as deps stable)
+      setTotalTime(computeCurrentElapsed);
     }
 
     return () => {
@@ -186,15 +189,15 @@ export function useTimer() {
         intervalRef.current = null;
       }
     };
-  }, [isRunning, isPaused, elapsed, lastStart]);
+  }, [isRunning, isPaused, computeCurrentElapsed]); // Added computeCurrentElapsed (stable memo)
 
   // Persist changes when relevant values change
   useEffect(() => {
     persist();
-  }, [elapsed, isRunning, isPaused, lastStart]);
+  }, [persist, elapsed, isRunning, isPaused, lastStart]); // Added persist (now callback)
 
   return {
-    time,
+    time: totalTime,
     isRunning,
     isPaused,
     formatTime,
