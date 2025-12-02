@@ -257,7 +257,7 @@ export default function AcceptInvitePage() {
             </div>
           ) : (
             <p className="text-gray-600">
-              You've been invited to join a team. Click the button below to accept the invitation.
+              You&apos;ve been invited to join a team. Click the button below to accept the invitation.
             </p>
           )}
         </div>

@@ -50,7 +50,7 @@ export function InviteLinkModal({
 
         <p className="text-gray-600 mb-4">
           Share this link with people you want to invite to <strong>{team.name}</strong>.{" "}
-          They'll need to login to accept the invitation.
+          They&apos;ll need to login to accept the invitation.
         </p>
 
         <div className="bg-gray-50 p-3 rounded-md mb-4 break-all text-sm font-mono">

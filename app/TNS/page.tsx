@@ -35,7 +35,7 @@ export default function TermsPage() {
 
             <section>
               <h2 className="text-xl font-semibold">Limitations</h2>
-              <p>We provide the service "as is" and do not guarantee uninterrupted operation.</p>
+              <p>We provide the service &quot;as is&quot; and do not guarantee uninterrupted operation.</p>
             </section>
 
             <section>
