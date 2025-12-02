@@ -30,7 +30,7 @@ export default function ImageSlider({ images, intervalMs = 6000 }: ImageSliderPr
     return () => {
       if (timerRef.current) window.clearInterval(timerRef.current);
     };
-  }, [currentSrcs, intervalMs]); // Depend on memoized currentSrcs
+  }, [currentSrcs, intervalMs]); // Depend on currentSrcs to reset if images change
 
   const goTo = (i: number) => {
     setIndex(i % images.length);

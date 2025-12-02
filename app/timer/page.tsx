@@ -49,6 +49,7 @@ export default function TimerPage() {
     try {
       const response = await fetch(getApiUrl("entries/active/"), {
         headers: getAuthHeaders(),
+        credentials: 'include',
       });
       if (response.ok) {
         const data = await response.json();
@@ -83,6 +84,7 @@ export default function TimerPage() {
         await fetch(getApiUrl(`entries/${activeEntryId}/`), {
           method: 'PATCH',
           headers: getAuthHeaders(),
+          credentials: 'include',
           body: JSON.stringify(payload),
         });
       } catch (err) {
@@ -98,6 +100,7 @@ export default function TimerPage() {
     try {
       const response = await fetch(getApiUrl("projects/"), {
         headers: getAuthHeaders(),
+        credentials: 'include',
       });
       if (response.ok) {
         const data = await response.json();
@@ -116,6 +119,7 @@ export default function TimerPage() {
     try {
       const response = await fetch(getApiUrl("entries/"), {
         headers: getAuthHeaders(),
+        credentials: 'include',
       });
       if (response.ok) {
         const data = await response.json();
@@ -148,6 +152,7 @@ export default function TimerPage() {
       const response = await fetch(getApiUrl("entries/start/"), {
         method: "POST",
         headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify(payload),
       }); 
       const d = await response.json().catch(() => null);
@@ -162,7 +167,7 @@ export default function TimerPage() {
         } else {
           // attempt to fetch active entry to obtain id/start time
           try {
-            const activeResp = await fetch(getApiUrl('entries/active/'), { headers: getAuthHeaders() });
+            const activeResp = await fetch(getApiUrl('entries/active/'), { headers: getAuthHeaders(), credentials: 'include' });
             if (activeResp.ok) {
               const activeData = await activeResp.json().catch(() => null);
               if (activeData) {
@@ -191,6 +196,7 @@ export default function TimerPage() {
       const response = await fetch(getApiUrl("entries/stop/"), {
         method: "POST",
         headers: getAuthHeaders(),
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -227,6 +233,7 @@ export default function TimerPage() {
       const response = await fetch(getApiUrl("projects/"), {
         method: "POST",
         headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
 
@@ -251,7 +258,17 @@ export default function TimerPage() {
     }
   };
 
-  const handleEdit = (entry: TimeEntry) => {
+  const handleEdit = async (entry: TimeEntry) => {
+    // Ensure we have the latest projects before opening the edit modal so the select can find the project's option
+    try {
+      const entryProjId = (entry as any).project?.id ?? (entry as any).project ?? (entry as any).project_id ?? null;
+      console.debug('Opening edit modal for entry', entry.id, 'entryProjId=', entryProjId, 'projectsHave=', projects.map(p=>p.id));
+      if (entryProjId && !projects.some((p) => p.id === entryProjId)) {
+        await fetchProjects();
+      }
+    } catch (err) {
+      // ignore
+    }
     setEditingEntry(entry);
     setShowEditModal(true);
   };
@@ -261,6 +278,7 @@ export default function TimerPage() {
       const response = await fetch(getApiUrl(`entries/${entryId}/`), {
         method: "PATCH",
         headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify(updates),
       });
 
@@ -287,6 +305,7 @@ export default function TimerPage() {
       const response = await fetch(getApiUrl(`entries/${id}/`), {
         method: "DELETE",
         headers: getAuthHeaders(),
+        credentials: 'include',
       });
 
       if (response.ok) {

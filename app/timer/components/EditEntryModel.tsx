@@ -23,11 +23,14 @@ export function EditEntryModal({
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [loading, setLoading] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (entry) {
       setDescription(entry.description || '');
-      setProjectId(entry.project?.id || null);
+      // Support entry.project being an object or a numeric id field `project_id`
+      const projId = (entry as any).project?.id ?? (entry as any).project ?? (entry as any).project_id ?? null;
+      setProjectId(typeof projId === 'number' ? projId : null);
       
       if (entry.start_time) {
         const start = new Date(entry.start_time);
@@ -53,11 +56,26 @@ export function EditEntryModal({
   const handleSave = async () => {
     if (!entry) return;
 
+    // Client-side validation: prevent end before start and missing start when end provided
+    setValidationError(null);
+    if (endTime && !startTime) {
+      setValidationError('Please provide a start time when specifying an end time.');
+      return;
+    }
+    if (startTime && endTime) {
+      const s = new Date(startTime).getTime();
+      const e = new Date(endTime).getTime();
+      if (Number.isFinite(s) && Number.isFinite(e) && e <= s) {
+        setValidationError('End time must be after start time.');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const updates: any = {
         description,
-        project: projectId,
+        project_id: projectId,
       };
 
       if (startTime) {
@@ -142,6 +160,9 @@ export function EditEntryModal({
         </div>
 
         <div className="flex gap-2 mt-6">
+          {validationError && (
+            <div className="w-full text-sm text-red-600 mb-2">{validationError}</div>
+          )}
           <button
             onClick={handleSave}
             disabled={loading}
