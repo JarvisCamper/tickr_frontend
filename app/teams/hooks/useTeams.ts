@@ -258,7 +258,7 @@ export function useTeams() {
         throw new Error("Failed to fetch team members");
       }
 
-      let data: TeamMember[] = await response.json();
+      const data: TeamMember[] = await response.json();
       
       const ownerInMembers = data.some(m => m.user_id === team.owner.id);
       

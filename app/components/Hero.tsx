@@ -1,6 +1,5 @@
 import React from 'react'
 import Link from 'next/link'
-import Image from 'next/image' // Import Next.js Image component
 import ImageSlider from './ImageSlider'
 
 const landingImages = [
@@ -13,10 +12,6 @@ const landingImages = [
 ];
 
 export default function Hero() {
-  
-  const previewSrc = '/landing-preview.png.png'; 
-  const aspectRatio = 16 / 9; // Assuming a common aspect ratio for the images
-
   return (
     <>
       {/* Two-column Hero: Timer (left) and Slider (right) */}
@@ -43,7 +38,7 @@ export default function Hero() {
                   href="/signup"
                   className="inline-flex items-center px-8 py-4 text-lg font-semibold text-white bg-emerald-500 rounded-md hover:bg-emerald-600 transition-colors shadow-lg"
                 >
-                  Start tracking time - it's free!
+                  Start tracking time - it&apos;s free!
                 </Link>
               </div>
             </div>

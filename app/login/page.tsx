@@ -141,7 +141,7 @@ export default function LoginPage() {
               </div>
 
               <div className="text-center text-sm text-gray-500">
-                Don't have an account? <Link href={searchParams.get("redirect") ? `/signup?redirect=${encodeURIComponent(searchParams.get("redirect")!)}` : "/signup"} className="text-cyan-600 hover:underline">Register</Link>
+                Don&apos;t have an account? <Link href={searchParams.get("redirect") ? `/signup?redirect=${encodeURIComponent(searchParams.get("redirect")!)}` : "/signup"} className="text-cyan-600 hover:underline">Register</Link>
               </div>
             </form>
           </div>

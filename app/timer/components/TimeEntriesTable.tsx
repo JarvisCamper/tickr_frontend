@@ -17,11 +17,16 @@ function formatDuration(durationStr: string | null): string {
   
   // If already formatted, return as is
   if (durationStr.includes(':')) {
+    // guard against negative formatted durations in -ve cases
+    if (durationStr.trim().startsWith('-')) {
+      return '00:00:00';
+    }
     return durationStr;
   }
   
   // Parse as seconds and format
-  const totalSeconds = parseFloat(durationStr);
+  let totalSeconds = parseFloat(durationStr);
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) totalSeconds = 0;
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = Math.floor(totalSeconds % 60);
