@@ -1,17 +1,11 @@
 // app/reports/page.tsx
 import { Metadata } from 'next'; // Optional: for page metadata
+import ReportClientWrapper from './components/ReportClientWrapper';
 
-// Your page component (replace with your actual content)
 export default function ReportsPage() {
-  return (
-    <div>
-      <h1>Reports Page</h1>
-      {/* Add your reports UI here */}
-    </div>
-  );
+  return <ReportClientWrapper />;
 }
 
-// Optional: Export metadata for SEO/static props
 export const metadata: Metadata = {
   title: 'Reports',
 };
