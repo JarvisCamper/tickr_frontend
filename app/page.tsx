@@ -1,5 +1,9 @@
-import Hero from './components/Hero';
-import React from 'react';
+import Hero from "./components/Hero";
+import React, { Suspense } from "react";
 export default function Home() {
-  return <Hero />;  
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Hero />
+    </Suspense>
+  );
 }
