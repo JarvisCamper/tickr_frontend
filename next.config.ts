@@ -13,10 +13,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* Skip ESLint during production builds to allow fast deploys while fixing lint errors */
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  /* Next.js 16 removed the `eslint` key from `next.config.ts`. Keep config object here for future options. */
 };
 
 export default nextConfig;
