@@ -1,4 +1,5 @@
 import Cookies from "js-cookie";
+import { getApiUrl } from "../../../constant/apiendpoints";
 
 export interface LoginRequest {
   email: string;
@@ -14,17 +15,12 @@ export interface LoginResponse {
 
 export async function login(credentials: LoginRequest): Promise<LoginResponse> {
   try {
-    const backendUrl = process.env.NEXT_PUBLIC_Backend_URL;
-    
-    // Debug: Check if environment variable is loaded
-    if (!backendUrl) {
-      throw new Error("Backend URL is not configured. Check your .env.local file.");
-    }
+    // Build URL using central API helper. Set `NEXT_PUBLIC_API_URL` in environment.
+    const url = getApiUrl("/login/");
 
-    console.log("Attempting login to:", `${backendUrl}/api/login/`);
+    console.log("Attempting login to:", url);
 
-    const response = await fetch(
-      `${backendUrl}/api/login/`,
+    const response = await fetch(url,
       {
         method: "POST",
         headers: {
