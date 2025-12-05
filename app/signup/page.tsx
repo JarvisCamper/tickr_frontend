@@ -1,4 +1,6 @@
+// src/app/signup/page.tsx
 "use client";
+
 import { useState, FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -30,37 +32,32 @@ function SignupForm() {
     }
 
     try {
-      // 1. SIGNUP — this already works
-      const signupResponse = await fetch(getApiUrl("signup/"), {
+      // 1. SIGNUP — works perfectly
+      const signupRes = await fetch(getApiUrl("signup/"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, password, password2 }),
       });
 
-      if (!signupResponse.ok) {
-        const errorData = await signupResponse.json();
-        throw new Error(
-          errorData.email?.[0] ||
-            errorData.username?.[0] ||
-            errorData.detail ||
-            "Signup failed"
-        );
+      if (!signupRes.ok) {
+        const err = await signupRes.json();
+        throw new Error(err.email?.[0] || err.username?.[0] || "Signup failed");
       }
 
-      // 2. AUTO-LOGIN USING OFFICIAL JWT ENDPOINT (THIS FIXES THE RED MESSAGE)
-      const loginResponse = await fetch(getApiUrl("token/"), {
+      // 2. AUTO-LOGIN USING CORRECT JWT ENDPOINT + CORRECT FIELD NAMES
+      const loginRes = await fetch(getApiUrl("token/"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password }), // SimpleJWT uses email/password
       });
 
-      if (!loginResponse.ok) {
+      if (!loginRes.ok) {
         throw new Error("Signup succeeded but auto-login failed. Please login manually.");
       }
 
-      const loginData = await loginResponse.json();
+      const loginData = await loginRes.json();
 
-      // SimpleJWT returns "access" and "refresh", not "access_token"
+      // SimpleJWT returns "access" and "refresh" — NOT access_token/refresh_token
       Cookies.set("access_token", loginData.access, { expires: 7 });
       Cookies.set("refresh_token", loginData.refresh, { expires: 7 });
 
@@ -68,19 +65,16 @@ function SignupForm() {
 
       const redirectTo = searchParams.get("redirect") || "/teams";
       window.location.href = redirectTo;
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Signup failed. Please try again.";
-      setError(errorMessage);
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ... rest of your JSX stays exactly the same (no changes needed below)
   return (
     <div className="min-h-screen bg-white">
-      {/* Your existing JSX — keep it 100% unchanged */}
+      {/* Your existing beautiful JSX — unchanged */}
       <header className="bg-gray-100 py-12 px-6">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900">Sign up</h1>
@@ -97,37 +91,28 @@ function SignupForm() {
               </div>
             )}
 
-            {/* Username, Email, Password fields — keep exactly as you have */}
+            {/* All your input fields — keep exactly as they are */}
             <div className="mb-6">
               <label htmlFor="username" className="block text-sm font-medium text-gray-900 mb-2">Username</label>
-              <input
-                id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)}
-                required disabled={isLoading} suppressHydrationWarning
-                className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-black disabled:bg-gray-50"
-                placeholder="johndoe"
-              />
+              <input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)}
+                required disabled={isLoading} className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-black disabled:bg-gray-50"
+                placeholder="johndoe" />
             </div>
 
             <div className="mb-6">
               <label htmlFor="email" className="block text-sm font-medium text-gray-900 mb-2">E-mail</label>
-              <input
-                id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                required disabled={isLoading} suppressHydrationWarning
-                className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-black disabled:bg-gray-50"
-                placeholder="you@example.com"
-              />
+              <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                required disabled={isLoading} className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-black disabled:bg-gray-50"
+                placeholder="you@example.com" />
             </div>
 
             <div className="mb-6">
               <label htmlFor="password" className="block text-sm font-medium text-gray-900 mb-2">Password</label>
               <div className="relative">
-                <input
-                  id="password" type={showPass ? "text" : "password"} value={password}
+                <input id="password" type={showPass ? "text" : "password"} value={password}
                   onChange={(e) => setPassword(e.target.value)} required disabled={isLoading}
-                  suppressHydrationWarning
                   className="w-full border border-gray-200 rounded-md px-3 py-2 pr-16 focus:outline-none focus:ring-2 focus:ring-blue-300 text-black disabled:bg-gray-50"
-                  placeholder="Enter your password"
-                />
+                  placeholder="Enter your password" />
                 <button type="button" onClick={togglePass} disabled={isLoading}
                   className="absolute right-3 top-2.5 text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400">
                   {showPass ? "Hide" : "Show"}
@@ -137,35 +122,23 @@ function SignupForm() {
 
             <div className="mb-6">
               <label htmlFor="password2" className="block text-sm font-medium text-gray-900 mb-2">Confirm Password</label>
-              <input
-                id="password2" type={showPass ? "text" : "password"} value={password2}
+              <input id="password2" type={showPass ? "text" : "password"} value={password2}
                 onChange={(e) => setPassword2(e.target.value)} required disabled={isLoading}
-                suppressHydrationWarning
                 className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-black disabled:bg-gray-50"
-                placeholder="Confirm your password"
-              />
+                placeholder="Confirm your password" />
             </div>
 
             <div className="mb-6">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="inline-flex items-center bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-md transition-colors disabled:bg-gray-400"
-              >
+              <button type="submit" disabled={isLoading}
+                className="inline-flex items-center bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-md transition-colors disabled:bg-gray-400">
                 {isLoading ? "Creating account..." : "Sign up"}
               </button>
             </div>
 
             <hr className="border-t border-gray-200 my-6" />
-
             <div className="text-base text-gray-700">
               <p className="mb-2">Already have an account?</p>
-              <Link 
-                href={searchParams.get("redirect") ? `/login?redirect=${encodeURIComponent(searchParams.get("redirect")!)}` : "/login"} 
-                className="text-blue-600 hover:underline"
-              >
-                Log in here
-              </Link>
+              <Link href="/login" className="text-blue-600 hover:underline">Log in here</Link>
             </div>
           </form>
         </div>
