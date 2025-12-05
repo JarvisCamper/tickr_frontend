@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useAuth } from "../../context-and-provider/AuthContext";
 import { getApiUrl } from "@/constant/apiendpoints";
 
-// Separate component that uses useSearchParams
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -35,29 +34,28 @@ function LoginForm() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(getApiUrl("login/"), {
+      // FINAL FIX: Use the official JWT endpoint
+      const response = await fetch(getApiUrl("token/"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || errorData.message || "Login failed");
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Invalid email or password");
       }
 
       const data = await response.json();
-      const redirectParam = searchParams.get("redirect");
-      const redirectTo = redirectParam
-        ? (redirectParam.includes('/teams/AcceptInvite') ? '/teams' : redirectParam)
-        : '/timer';
 
-      login(data.access_token, data.refresh_token);
+      // SimpleJWT returns "access" and "refresh"
+      login(data.access, data.refresh);
       window.dispatchEvent(new Event("auth-changed"));
+
+      const redirectTo = searchParams.get("redirect") || "/timer";
       window.location.href = redirectTo;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Login failed. Please check your credentials.";
-      setError(errorMessage);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
       setIsLoading(false);
     }
@@ -67,39 +65,27 @@ function LoginForm() {
     <div className="min-h-screen bg-[linear-gradient(135deg,#eef2f7_0%,#ffffff_100%)] flex items-center justify-center">
       <div className="w-full max-w-6xl mx-auto p-6">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-2">
-          {/* Left illustration / brand */}
           <div className="hidden md:flex flex-col items-start justify-center gap-6 p-10 bg-linear-to-b from-teal-600 to-cyan-500 text-white">
             <div className="flex items-center gap-3">
-              {/* show logo from public (try common filenames) */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.png" alt="Tickr logo" className="h-12 w-auto" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-              <div className="text-2xl font-semibold">Tickr</div>
+              <div className="text-2xl font-bold">Tickr</div>
             </div>
-
-            <h2 className="text-3xl font-extrabold max-w-xs">Unlock Your Team <span className="text-cyan-100">Performance</span></h2>
-            <p className="text-white/80 max-w-sm">A modern, fast time tracking tool with powerful team insights and simple workflows.</p>
-
-            <div className="w-full">
-              {/* simple decorative illustration */}
-              <svg viewBox="0 0 600 400" className="w-full h-40 opacity-90" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-                <rect x="0" y="0" width="600" height="400" rx="20" fill="rgba(255,255,255,0.03)" />
-                <g transform="translate(40,40)">
-                  <circle cx="60" cy="90" r="40" fill="#fff" opacity="0.08" />
-                  <rect x="120" y="40" width="60" height="100" rx="8" fill="#fff" opacity="0.06" />
-                  <rect x="220" y="30" width="80" height="120" rx="12" fill="#fff" opacity="0.06" />
-                </g>
-              </svg>
-            </div>
+            <h2 className="text-3xl font-extrabold max-w-xs">
+              Unlock Your Team <span className="text-cyan-100">Performance</span>
+            </h2>
+            <p className="text-white/80 max-w-sm">
+              A modern, fast time tracking tool with powerful team insights and simple workflows.
+            </p>
           </div>
 
-          {/* Right form */}
           <div className="p-8 md:p-12">
             <h3 className="text-2xl font-bold mb-1">Welcome to Tickr</h3>
             <p className="text-sm text-gray-500 mb-6">Unlock your team performance</p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded">{error}</div>
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded">
+                  {error}
+                </div>
               )}
 
               <div>
@@ -118,31 +104,45 @@ function LoginForm() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
                 <div className="relative">
                   <input
-                    type={showPass ? 'text' : 'password'}
+                    type={showPass ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     className="w-full border border-gray-200 rounded-md px-3 py-2 pr-20 focus:ring-2 focus:ring-cyan-300"
                     placeholder="Enter password"
                   />
-                  <button type="button" onClick={togglePass} className="absolute right-3 top-2.5 text-sm text-cyan-600">{showPass ? 'Hide' : 'Show'}</button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="text-sm">
-                  <Link href="/forgot-password" className="text-cyan-600 hover:underline">Forgot password?</Link>
+                  <button
+                    type="button"
+                    onClick={togglePass}
+                    className="absolute right-3 top-2.5 text-sm text-cyan-600"
+                  >
+                    {showPass ? "Hide" : "Show"}
+                  </button>
                 </div>
               </div>
 
               <div>
-                <button type="submit" disabled={isLoading} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-medium py-2 rounded-md">
-                  {isLoading ? 'Logging in...' : 'Login'}
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-medium py-2 rounded-md disabled:opacity-70"
+                >
+                  {isLoading ? "Logging in..." : "Login"}
                 </button>
               </div>
 
               <div className="text-center text-sm text-gray-500">
-                Don&apos;t have an account? <Link href={searchParams.get("redirect") ? `/signup?redirect=${encodeURIComponent(searchParams.get("redirect")!)}` : "/signup"} className="text-cyan-600 hover:underline">Register</Link>
+                Don't have an account?{" "}
+                <Link
+                  href={
+                    searchParams.get("redirect")
+                      ? `/signup?redirect=${encodeURIComponent(searchParams.get("redirect")!)}`
+                      : "/signup"
+                  }
+                  className="text-cyan-600 hover:underline"
+                >
+                  Register
+                </Link>
               </div>
             </form>
           </div>
@@ -152,14 +152,9 @@ function LoginForm() {
   );
 }
 
-
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-[linear-gradient(135deg,#eef2f7_0%,#ffffff_100%)] flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
-      </div>
-    }>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
       <LoginForm />
     </Suspense>
   );

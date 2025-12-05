@@ -1,10 +1,9 @@
 "use client";
-import { useState, ChangeEvent, FormEvent, Suspense } from "react";
+import { useState, FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Cookies from "js-cookie";
 import { getApiUrl } from "@/constant/apiendpoints";
-
 
 function SignupForm() {
   const router = useRouter();
@@ -31,6 +30,7 @@ function SignupForm() {
     }
 
     try {
+      // 1. SIGNUP — this already works
       const signupResponse = await fetch(getApiUrl("signup/"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -39,10 +39,16 @@ function SignupForm() {
 
       if (!signupResponse.ok) {
         const errorData = await signupResponse.json();
-        throw new Error(errorData.email?.[0] || errorData.username?.[0] || "Signup failed");
+        throw new Error(
+          errorData.email?.[0] ||
+            errorData.username?.[0] ||
+            errorData.detail ||
+            "Signup failed"
+        );
       }
 
-      const loginResponse = await fetch(getApiUrl("login/"), {
+      // 2. AUTO-LOGIN USING OFFICIAL JWT ENDPOINT (THIS FIXES THE RED MESSAGE)
+      const loginResponse = await fetch(getApiUrl("token/"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -53,25 +59,28 @@ function SignupForm() {
       }
 
       const loginData = await loginResponse.json();
-      Cookies.set("access_token", loginData.access_token, { expires: 7 });
-      Cookies.set("refresh_token", loginData.refresh_token, { expires: 7 });
+
+      // SimpleJWT returns "access" and "refresh", not "access_token"
+      Cookies.set("access_token", loginData.access, { expires: 7 });
+      Cookies.set("refresh_token", loginData.refresh, { expires: 7 });
+
       window.dispatchEvent(new Event("auth-changed"));
-      
-      // Get redirect URL from query params or default to teams
+
       const redirectTo = searchParams.get("redirect") || "/teams";
-      
-      // Use window.location for reliable redirect after signup
       window.location.href = redirectTo;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Signup failed. Please try again.";
+      const errorMessage =
+        error instanceof Error ? error.message : "Signup failed. Please try again.";
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // ... rest of your JSX stays exactly the same (no changes needed below)
   return (
     <div className="min-h-screen bg-white">
+      {/* Your existing JSX — keep it 100% unchanged */}
       <header className="bg-gray-100 py-12 px-6">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900">Sign up</h1>
@@ -88,16 +97,12 @@ function SignupForm() {
               </div>
             )}
 
+            {/* Username, Email, Password fields — keep exactly as you have */}
             <div className="mb-6">
               <label htmlFor="username" className="block text-sm font-medium text-gray-900 mb-2">Username</label>
               <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                disabled={isLoading}
-                suppressHydrationWarning
+                id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)}
+                required disabled={isLoading} suppressHydrationWarning
                 className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-black disabled:bg-gray-50"
                 placeholder="johndoe"
               />
@@ -106,13 +111,8 @@ function SignupForm() {
             <div className="mb-6">
               <label htmlFor="email" className="block text-sm font-medium text-gray-900 mb-2">E-mail</label>
               <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading}
-                suppressHydrationWarning
+                id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                required disabled={isLoading} suppressHydrationWarning
                 className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-black disabled:bg-gray-50"
                 placeholder="you@example.com"
               />
@@ -122,22 +122,14 @@ function SignupForm() {
               <label htmlFor="password" className="block text-sm font-medium text-gray-900 mb-2">Password</label>
               <div className="relative">
                 <input
-                  id="password"
-                  type={showPass ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={isLoading}
+                  id="password" type={showPass ? "text" : "password"} value={password}
+                  onChange={(e) => setPassword(e.target.value)} required disabled={isLoading}
                   suppressHydrationWarning
                   className="w-full border border-gray-200 rounded-md px-3 py-2 pr-16 focus:outline-none focus:ring-2 focus:ring-blue-300 text-black disabled:bg-gray-50"
                   placeholder="Enter your password"
                 />
-                <button
-                  type="button"
-                  onClick={togglePass}
-                  disabled={isLoading}
-                  className="absolute right-3 top-2.5 text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400"
-                >
+                <button type="button" onClick={togglePass} disabled={isLoading}
+                  className="absolute right-3 top-2.5 text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400">
                   {showPass ? "Hide" : "Show"}
                 </button>
               </div>
@@ -146,12 +138,8 @@ function SignupForm() {
             <div className="mb-6">
               <label htmlFor="password2" className="block text-sm font-medium text-gray-900 mb-2">Confirm Password</label>
               <input
-                id="password2"
-                type={showPass ? "text" : "password"}
-                value={password2}
-                onChange={(e) => setPassword2(e.target.value)}
-                required
-                disabled={isLoading}
+                id="password2" type={showPass ? "text" : "password"} value={password2}
+                onChange={(e) => setPassword2(e.target.value)} required disabled={isLoading}
                 suppressHydrationWarning
                 className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-black disabled:bg-gray-50"
                 placeholder="Confirm your password"
