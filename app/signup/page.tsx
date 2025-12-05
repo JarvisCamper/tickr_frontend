@@ -89,9 +89,20 @@ function SignupForm() {
           console.error("Auto-login fallback request error", e);
         }
 
-        // Surface the most useful server message if present
-        const serverMsg = errBody?.detail || errBody?.non_field_errors?.[0] || errBody?.access || errBody?.message;
-        throw new Error(serverMsg || "Signup succeeded but auto-login failed. Please login manually.");
+        // Surface a helpful server message if present. Try JSON fields, then raw text.
+        let serverMsg = null;
+        if (errBody) {
+          serverMsg = errBody.detail || errBody.non_field_errors?.[0] || errBody.access || errBody.message || JSON.stringify(errBody);
+        } else {
+          try {
+            const txt = await loginRes.text();
+            if (txt) serverMsg = txt;
+          } catch (e) {}
+        }
+
+        const finalMsg = serverMsg || "Signup succeeded but auto-login failed. Please login manually.";
+        console.error("Auto-login error shown to user:", finalMsg);
+        throw new Error(finalMsg);
       }
 
       const loginData = await loginRes.json();

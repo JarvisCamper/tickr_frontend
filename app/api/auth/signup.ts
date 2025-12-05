@@ -1,6 +1,7 @@
 // app/api/auth/signup.ts
 import Cookies from "js-cookie";
-import { login,LoginResponse } from "./login"; 
+import { apiLogin } from "./login";
+import { getApiUrl } from "../../../constant/apiendpoints";
 
 export interface SignupRequest {
   username: string;
@@ -9,8 +10,8 @@ export interface SignupRequest {
 }
 
 export interface SignupResponse {
-  success: string;
-  data: {
+  success?: string;
+  data?: {
     id: number;
     username: string;
     email: string;
@@ -18,35 +19,32 @@ export interface SignupResponse {
 }
 
 export async function signup(credentials: SignupRequest): Promise<SignupResponse> {
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_Backend_URL}/api/signup/`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(credentials),
-    }
-  );
+  const url = getApiUrl("signup/");
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(credentials),
+  });
 
-  const result = await response.json();
+  const resultBody = await (async () => {
+    try {
+      return await response.json();
+    } catch (e) {
+      return null;
+    }
+  })();
 
   if (!response.ok) {
-    const errorMsg = result?.email?.[0] || result?.username?.[0] || "Signup failed";
+    const errorMsg = (resultBody && (resultBody?.email?.[0] || resultBody?.username?.[0] || resultBody?.detail || resultBody?.message)) || `Signup failed (status ${response.status})`;
     throw new Error(errorMsg);
   }
 
-  // Auto-login after successful signup
-  const loginResponse = await login({ 
-    email: credentials.email,
-    password: credentials.password,
-  });
+  // Auto-login after successful signup using the robust apiLogin helper
+  const tokens = await apiLogin({ email: credentials.email, username: credentials.username, password: credentials.password });
 
-  
+  // Store tokens using the cookie names expected by AuthContext
+  Cookies.set("access_token", tokens.access, { expires: 7, sameSite: "lax" });
+  Cookies.set("refresh_token", tokens.refresh, { expires: 7, sameSite: "lax" });
 
-  // Store tokens (same as login)
-  Cookies.set("access_token", loginResponse.access_token, { expires: 7 });
-  Cookies.set("refresh_token", loginResponse.refresh_token, { expires: 7 });
-
-  return result;
+  return resultBody;
 }

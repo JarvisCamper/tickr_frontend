@@ -52,6 +52,16 @@ function LoginForm() {
       if (!response.ok) {
         console.error("/token/ returned error", { status: response.status, body: respBody });
 
+        // Try to build a helpful message from respBody or raw text
+        let serverMsg: string | null = null;
+        if (respBody) serverMsg = respBody.detail || respBody.message || JSON.stringify(respBody);
+        else {
+          try {
+            const raw = await response.text();
+            if (raw) serverMsg = raw;
+          } catch (e) {}
+        }
+
         // Fallback: try legacy /login/ endpoint which some backends return access_token/refresh_token
         try {
           const alt = await fetch(getApiUrl("/login/"), {
@@ -63,16 +73,22 @@ function LoginForm() {
           let altBody: any = null;
           try {
             altBody = await alt.json();
-          } catch (e) {}
+          } catch (e) {
+            try {
+              const raw = await alt.text();
+              if (raw) altBody = raw;
+            } catch (ee) {}
+          }
 
           if (!alt.ok) {
             console.error("/login/ fallback failed", { status: alt.status, body: altBody });
-            throw new Error(altBody?.detail || altBody?.message || "Invalid email or password");
+            const altMsg = (typeof altBody === 'object') ? (altBody?.detail || altBody?.message || JSON.stringify(altBody)) : altBody;
+            throw new Error(altMsg || serverMsg || "Invalid email or password");
           }
 
           // map tokens from alt response
-          const accessAlt = altBody?.access || altBody?.access_token;
-          const refreshAlt = altBody?.refresh || altBody?.refresh_token;
+          const accessAlt = altBody?.access || altBody?.access_token || (typeof altBody === 'string' ? null : null);
+          const refreshAlt = altBody?.refresh || altBody?.refresh_token || (typeof altBody === 'string' ? null : null);
           if (!accessAlt || !refreshAlt) {
             throw new Error("Login succeeded but server returned no tokens");
           }
@@ -83,8 +99,11 @@ function LoginForm() {
           const redirectTo = searchParams.get("redirect") || "/timer";
           window.location.href = redirectTo;
           return;
-        } catch (err) {
-          throw err;
+        } catch (err: any) {
+          // Surface the message to the UI
+          const showMsg = err?.message || serverMsg || "Invalid email or password";
+          console.error("Login flow final error:", showMsg);
+          throw new Error(showMsg);
         }
       }
 
