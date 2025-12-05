@@ -16,6 +16,7 @@ function SignupForm() {
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   const togglePass = () => setShowPass(!showPass);
 
@@ -34,6 +35,9 @@ function SignupForm() {
       // Use central signup helper which also performs auto-login and sets cookies
       await apiSignup({ username, email, password });
 
+      // clear debug on success
+      setDebugInfo(null);
+
       const redirectTo = searchParams.get("redirect") || "/teams";
       window.location.href = redirectTo;
     } catch (err: any) {
@@ -46,6 +50,7 @@ function SignupForm() {
           ? JSON.stringify(err)
           : "Something went wrong";
       setError(msg);
+      setDebugInfo(err?.details || err);
     } finally {
       setIsLoading(false);
     }
@@ -120,6 +125,13 @@ function SignupForm() {
               <Link href="/login" className="text-blue-600 hover:underline">Log in here</Link>
             </div>
           </form>
+
+          {debugInfo && (
+            <div className="mt-6 p-3 bg-gray-50 border border-gray-200 rounded text-xs text-gray-700">
+              <div className="font-medium mb-1">Debug (raw auth response)</div>
+              <pre className="whitespace-pre-wrap">{JSON.stringify(debugInfo, null, 2)}</pre>
+            </div>
+          )}
         </div>
       </main>
     </div>

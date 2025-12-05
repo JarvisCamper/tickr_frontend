@@ -80,5 +80,8 @@ export async function apiLogin(credentials: LoginRequest): Promise<LoginResponse
 
   // If we reach here, all attempts failed
   const errMsg = lastError?.body ? (typeof lastError.body === 'string' ? lastError.body : JSON.stringify(lastError.body)) : (lastError?.message || 'Login failed');
-  throw new Error(errMsg);
+  const err = new Error(errMsg);
+  // attach raw info for debugging
+  (err as any).details = lastError;
+  throw err;
 }

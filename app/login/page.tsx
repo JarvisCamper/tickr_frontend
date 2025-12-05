@@ -15,6 +15,7 @@ function LoginForm() {
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -37,12 +38,15 @@ function LoginForm() {
       // Use central auth helper which will try token/login endpoints and normalize tokens
       const tokens = await apiLogin({ email, password });
 
+      // clear debug on success
+      setDebugInfo(null);
+
       login(tokens.access, tokens.refresh);
       window.dispatchEvent(new Event("auth-changed"));
 
       const redirectTo = searchParams.get("redirect") || "/timer";
       window.location.href = redirectTo;
-    } catch (err) {
+    } catch (err: any) {
       // Show detailed message whether err is Error, string, or object
       const msg =
         typeof err === "string"
@@ -53,6 +57,8 @@ function LoginForm() {
           ? JSON.stringify(err)
           : "Login failed";
       setError(msg);
+      // capture raw details if present
+      setDebugInfo(err?.details || err);
     } finally {
       setIsLoading(false);
     }
@@ -142,6 +148,14 @@ function LoginForm() {
                 </Link>
               </div>
             </form>
+
+            {/* Debug panel (visible when debugInfo exists) */}
+            {debugInfo && (
+              <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded text-xs text-gray-700">
+                <div className="font-medium mb-1">Debug (raw auth response)</div>
+                <pre className="whitespace-pre-wrap">{JSON.stringify(debugInfo, null, 2)}</pre>
+              </div>
+            )}
           </div>
         </div>
       </div>
