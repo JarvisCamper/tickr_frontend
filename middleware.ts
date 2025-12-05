@@ -26,12 +26,10 @@ export default function middleware(request: NextRequest) {
   // Don't redirect from login/signup if there's a redirect parameter (let the page handle it)
   // Also allow access to login/signup pages even when authenticated if they have a redirect
   if (pathname === "/login" || pathname === "/signup") {
-    if (request.nextUrl.searchParams.has("redirect")) {
-      return NextResponse.next(); // Allow access if redirect parameter exists
-    }
-    if (accessToken) {
-      return NextResponse.redirect(new URL("/teams", request.url));
-    }
+    // Let the client handle post-login navigation. If a `redirect` query param exists
+    // the login/signup pages will respect it; otherwise we don't force a server-side
+    // redirect to `/teams` so invite flow (login -> return to AcceptInvite) works reliably.
+    return NextResponse.next();
   }
 
   return NextResponse.next();

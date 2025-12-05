@@ -22,7 +22,7 @@ function LoginForm() {
       const redirectParam = searchParams.get("redirect");
       const redirectTo = redirectParam
         ? (redirectParam.includes('/teams/AcceptInvite') ? '/teams' : redirectParam)
-        : '/teams';
+        : '/timer';
       router.push(redirectTo);
     }
   }, [isAuthenticated, router, searchParams]);
@@ -44,7 +44,7 @@ function LoginForm() {
       login(tokens.access, tokens.refresh);
       window.dispatchEvent(new Event("auth-changed"));
 
-      const redirectTo = searchParams.get("redirect") || "/teams";
+      const redirectTo = searchParams.get("redirect") || "/timer";
       window.location.href = redirectTo;
     } catch (err: any) {
       // Show detailed message whether err is Error, string, or object
