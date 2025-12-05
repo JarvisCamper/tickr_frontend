@@ -43,7 +43,16 @@ function LoginForm() {
       const redirectTo = searchParams.get("redirect") || "/timer";
       window.location.href = redirectTo;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      // Show detailed message whether err is Error, string, or object
+      const msg =
+        typeof err === "string"
+          ? err
+          : err instanceof Error
+          ? err.message
+          : err && typeof err === "object"
+          ? JSON.stringify(err)
+          : "Login failed";
+      setError(msg);
     } finally {
       setIsLoading(false);
     }

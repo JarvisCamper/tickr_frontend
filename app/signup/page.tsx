@@ -37,7 +37,15 @@ function SignupForm() {
       const redirectTo = searchParams.get("redirect") || "/teams";
       window.location.href = redirectTo;
     } catch (err: any) {
-      setError(err.message || "Something went wrong");
+      const msg =
+        typeof err === "string"
+          ? err
+          : err instanceof Error
+          ? err.message
+          : err && typeof err === "object"
+          ? JSON.stringify(err)
+          : "Something went wrong";
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
