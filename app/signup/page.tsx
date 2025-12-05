@@ -4,8 +4,7 @@
 import { useState, FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Cookies from "js-cookie";
-import { getApiUrl } from "@/constant/apiendpoints";
+import { signup as apiSignup } from "../api/auth/signup";
 
 function SignupForm() {
   const router = useRouter();
@@ -32,86 +31,8 @@ function SignupForm() {
     }
 
     try {
-      // 1. SIGNUP — works perfectly
-      const signupRes = await fetch(getApiUrl("signup/"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password, password2 }),
-      });
-
-      if (!signupRes.ok) {
-        const err = await signupRes.json();
-        throw new Error(err.email?.[0] || err.username?.[0] || "Signup failed");
-      }
-
-      // 2. AUTO-LOGIN USING CORRECT JWT ENDPOINT + CORRECT FIELD NAMES
-      const loginRes = await fetch(getApiUrl("token/"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }), // SimpleJWT uses email/password
-      });
-
-      if (!loginRes.ok) {
-        // Try to read server error to show a more helpful message
-        let errBody: any = null;
-        try {
-          errBody = await loginRes.json();
-        } catch (e) {
-          // ignore parse errors
-        }
-
-        console.error("Auto-login failed (email payload)", { status: loginRes.status, body: errBody });
-
-        // If token endpoint rejected email, try falling back to username (some backends expect username)
-        try {
-          const fallbackRes = await fetch(getApiUrl("token/"), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password }),
-          });
-
-          if (fallbackRes.ok) {
-            const fallbackData = await fallbackRes.json();
-            Cookies.set("access_token", fallbackData.access, { expires: 7 });
-            Cookies.set("refresh_token", fallbackData.refresh, { expires: 7 });
-            window.dispatchEvent(new Event("auth-changed"));
-            const redirectTo = searchParams.get("redirect") || "/teams";
-            window.location.href = redirectTo;
-            return; // success via fallback
-          }
-
-          let fbBody = null;
-          try {
-            fbBody = await fallbackRes.json();
-          } catch (e) {}
-          console.error("Auto-login fallback failed (username payload)", { status: fallbackRes.status, body: fbBody });
-        } catch (e) {
-          console.error("Auto-login fallback request error", e);
-        }
-
-        // Surface a helpful server message if present. Try JSON fields, then raw text.
-        let serverMsg = null;
-        if (errBody) {
-          serverMsg = errBody.detail || errBody.non_field_errors?.[0] || errBody.access || errBody.message || JSON.stringify(errBody);
-        } else {
-          try {
-            const txt = await loginRes.text();
-            if (txt) serverMsg = txt;
-          } catch (e) {}
-        }
-
-        const finalMsg = serverMsg || "Signup succeeded but auto-login failed. Please login manually.";
-        console.error("Auto-login error shown to user:", finalMsg);
-        throw new Error(finalMsg);
-      }
-
-      const loginData = await loginRes.json();
-
-      // SimpleJWT returns "access" and "refresh" — NOT access_token/refresh_token
-      Cookies.set("access_token", loginData.access, { expires: 7 });
-      Cookies.set("refresh_token", loginData.refresh, { expires: 7 });
-
-      window.dispatchEvent(new Event("auth-changed"));
+      // Use central signup helper which also performs auto-login and sets cookies
+      await apiSignup({ username, email, password });
 
       const redirectTo = searchParams.get("redirect") || "/teams";
       window.location.href = redirectTo;

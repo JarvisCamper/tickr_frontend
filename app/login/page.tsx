@@ -4,7 +4,7 @@ import React, { useState, FormEvent, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../../context-and-provider/AuthContext";
-import { getApiUrl } from "@/constant/apiendpoints";
+import { apiLogin } from "../api/auth/login";
 
 function LoginForm() {
   const router = useRouter();
@@ -34,92 +34,10 @@ function LoginForm() {
     setIsLoading(true);
 
     try {
-      // FINAL FIX: Use the official JWT endpoint
-      const response = await fetch(getApiUrl("token/"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      // Use central auth helper which will try token/login endpoints and normalize tokens
+      const tokens = await apiLogin({ email, password });
 
-      // parse body if any
-      let respBody: any = null;
-      try {
-        respBody = await response.json();
-      } catch (e) {
-        // ignore
-      }
-
-      if (!response.ok) {
-        console.error("/token/ returned error", { status: response.status, body: respBody });
-
-        // Try to build a helpful message from respBody or raw text
-        let serverMsg: string | null = null;
-        if (respBody) serverMsg = respBody.detail || respBody.message || JSON.stringify(respBody);
-        else {
-          try {
-            const raw = await response.text();
-            if (raw) serverMsg = raw;
-          } catch (e) {}
-        }
-
-        // Fallback: try legacy /login/ endpoint which some backends return access_token/refresh_token
-        try {
-          const alt = await fetch(getApiUrl("/login/"), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
-          });
-
-          let altBody: any = null;
-          try {
-            altBody = await alt.json();
-          } catch (e) {
-            try {
-              const raw = await alt.text();
-              if (raw) altBody = raw;
-            } catch (ee) {}
-          }
-
-          if (!alt.ok) {
-            console.error("/login/ fallback failed", { status: alt.status, body: altBody });
-            const altMsg = (typeof altBody === 'object') ? (altBody?.detail || altBody?.message || JSON.stringify(altBody)) : altBody;
-            throw new Error(altMsg || serverMsg || "Invalid email or password");
-          }
-
-          // map tokens from alt response
-          const accessAlt = altBody?.access || altBody?.access_token || (typeof altBody === 'string' ? null : null);
-          const refreshAlt = altBody?.refresh || altBody?.refresh_token || (typeof altBody === 'string' ? null : null);
-          if (!accessAlt || !refreshAlt) {
-            throw new Error("Login succeeded but server returned no tokens");
-          }
-
-          login(accessAlt, refreshAlt);
-          window.dispatchEvent(new Event("auth-changed"));
-
-          const redirectTo = searchParams.get("redirect") || "/timer";
-          window.location.href = redirectTo;
-          return;
-        } catch (err: any) {
-          // Surface the message to the UI
-          const showMsg = err?.message || serverMsg || "Invalid email or password";
-          console.error("Login flow final error:", showMsg);
-          throw new Error(showMsg);
-        }
-      }
-
-      const data = respBody;
-
-      // Accept either SimpleJWT (`access`/`refresh`) or other (`access_token`/`refresh_token`)
-      const access = data?.access || data?.access_token;
-      const refresh = data?.refresh || data?.refresh_token;
-
-      if (!access || !refresh) {
-        console.error("/token/ returned no tokens", { body: data });
-        throw new Error("Login succeeded but server returned no tokens");
-      }
-
-      // Use auth context login helper
-      login(access, refresh);
+      login(tokens.access, tokens.refresh);
       window.dispatchEvent(new Event("auth-changed"));
 
       const redirectTo = searchParams.get("redirect") || "/timer";
