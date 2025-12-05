@@ -11,10 +11,23 @@ export interface LoginResponse {
   refresh: string;
 }
 
-// Attempt to obtain JWT tokens from the backend. This helper tries common
-// endpoints and payload shapes and returns normalized `{ access, refresh }`.
+// Clean + fully compatible login helper
 export async function apiLogin(credentials: LoginRequest): Promise<LoginResponse> {
-  const tryEndpoints = async (url: string, payload: object) => {
+  const tokenUrl = getApiUrl("token/");
+  const loginUrl = getApiUrl("login/");
+
+  const payloadEmail = {
+    email: credentials.email,
+    password: credentials.password,
+  };
+
+  const payloadUsername = {
+    username: credentials.username,
+    password: credentials.password,
+  };
+
+  // Shared request function
+  const send = async (url: string, payload: any) => {
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -24,64 +37,53 @@ export async function apiLogin(credentials: LoginRequest): Promise<LoginResponse
     let body: any = null;
     try {
       body = await res.json();
-    } catch (e) {
-      try {
-        body = await res.text();
-      } catch (ee) {
-        body = null;
-      }
+    } catch (_) {
+      body = {};
     }
 
-    return { ok: res.ok, status: res.status, body } as const;
+    return { ok: res.ok, status: res.status, body };
   };
 
-  // 1) Try SimpleJWT token endpoint with email
-  const baseTokenUrl = getApiUrl("token/");
-  const loginUrl = getApiUrl("login/");
-
   const attempts = [
-    { url: baseTokenUrl, payload: { email: credentials.email, password: credentials.password } },
-    { url: baseTokenUrl, payload: { username: credentials.username, password: credentials.password } },
-    { url: loginUrl, payload: { email: credentials.email, password: credentials.password } },
-    { url: loginUrl, payload: { username: credentials.username, password: credentials.password } },
+    { url: tokenUrl, payload: payloadEmail },
+    { url: tokenUrl, payload: payloadUsername },
+    { url: loginUrl, payload: payloadEmail },
+    { url: loginUrl, payload: payloadUsername },
   ];
 
   let lastError: any = null;
+
   for (const attempt of attempts) {
-    try {
-      const { ok, body, status } = await tryEndpoints(attempt.url, attempt.payload);
-      if (!ok) {
-        lastError = { status, body };
-        continue;
-      }
+    const { ok, status, body } = await send(attempt.url, attempt.payload);
 
-      // body might be object or string
-      if (!body) {
-        throw new Error("Empty response from auth endpoint");
-      }
-
-      // Accept both shapes: { access, refresh } and { access_token, refresh_token }
-      const access = body.access || body.access_token;
-      const refresh = body.refresh || body.refresh_token;
-      if (access && refresh) {
-        return { access, refresh };
-      }
-
-      // Some APIs return nested shapes or different names - try common aliases
-      if (body.token && typeof body.token === 'string') {
-        return { access: body.token, refresh: '' };
-      }
-
+    if (!ok) {
       lastError = { status, body };
-    } catch (err) {
-      lastError = err;
+      continue;
     }
+
+    if (!body) continue;
+
+    const access = body.access || body.access_token;
+    const refresh = body.refresh || body.refresh_token;
+
+    if (access && refresh) {
+      return { access, refresh };
+    }
+
+    // If some API returns a single token (fallback)
+    if (body.token) {
+      return { access: body.token, refresh: "" };
+    }
+
+    lastError = { status, body };
   }
 
-  // If we reach here, all attempts failed
-  const errMsg = lastError?.body ? (typeof lastError.body === 'string' ? lastError.body : JSON.stringify(lastError.body)) : (lastError?.message || 'Login failed');
-  const err = new Error(errMsg);
-  // attach raw info for debugging
+  const msg =
+    typeof lastError?.body === "string"
+      ? lastError.body
+      : JSON.stringify(lastError?.body || "Login failed");
+
+  const err = new Error(msg);
   (err as any).details = lastError;
   throw err;
 }
