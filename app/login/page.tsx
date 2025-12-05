@@ -41,15 +41,66 @@ function LoginForm() {
         body: JSON.stringify({ email, password }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Invalid email or password");
+      // parse body if any
+      let respBody: any = null;
+      try {
+        respBody = await response.json();
+      } catch (e) {
+        // ignore
       }
 
-      const data = await response.json();
+      if (!response.ok) {
+        console.error("/token/ returned error", { status: response.status, body: respBody });
 
-      // SimpleJWT returns "access" and "refresh"
-      login(data.access, data.refresh);
+        // Fallback: try legacy /login/ endpoint which some backends return access_token/refresh_token
+        try {
+          const alt = await fetch(getApiUrl("/login/"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          });
+
+          let altBody: any = null;
+          try {
+            altBody = await alt.json();
+          } catch (e) {}
+
+          if (!alt.ok) {
+            console.error("/login/ fallback failed", { status: alt.status, body: altBody });
+            throw new Error(altBody?.detail || altBody?.message || "Invalid email or password");
+          }
+
+          // map tokens from alt response
+          const accessAlt = altBody?.access || altBody?.access_token;
+          const refreshAlt = altBody?.refresh || altBody?.refresh_token;
+          if (!accessAlt || !refreshAlt) {
+            throw new Error("Login succeeded but server returned no tokens");
+          }
+
+          login(accessAlt, refreshAlt);
+          window.dispatchEvent(new Event("auth-changed"));
+
+          const redirectTo = searchParams.get("redirect") || "/timer";
+          window.location.href = redirectTo;
+          return;
+        } catch (err) {
+          throw err;
+        }
+      }
+
+      const data = respBody;
+
+      // Accept either SimpleJWT (`access`/`refresh`) or other (`access_token`/`refresh_token`)
+      const access = data?.access || data?.access_token;
+      const refresh = data?.refresh || data?.refresh_token;
+
+      if (!access || !refresh) {
+        console.error("/token/ returned no tokens", { body: data });
+        throw new Error("Login succeeded but server returned no tokens");
+      }
+
+      // Use auth context login helper
+      login(access, refresh);
       window.dispatchEvent(new Event("auth-changed"));
 
       const redirectTo = searchParams.get("redirect") || "/timer";
