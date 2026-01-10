@@ -59,8 +59,8 @@ export default function TeamsPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchTeams();
-      fetchProjects();
+      // Fetch teams and projects in parallel for faster loading
+      Promise.all([fetchTeams(), fetchProjects()]);
     }
   }, [isAuthenticated, fetchTeams, fetchProjects]);
 

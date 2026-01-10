@@ -1,7 +1,15 @@
-"use client";
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+'use client';
+
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
 import Cookies from 'js-cookie';
 
+// ============ Types ============
 interface User {
   id: number;
   email: string;
@@ -17,13 +25,18 @@ interface AuthContextType {
   fetchUser: () => Promise<void>;
 }
 
+// ============ Context ============
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// ============ Provider ============
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  /**
+   * Get authentication headers with bearer token
+   */
   const getAuthHeaders = (): HeadersInit => {
     const token = Cookies.get('access_token');
     const headers: HeadersInit = {
@@ -35,6 +48,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return headers;
   };
 
+  /**
+   * Fetch current user information from API
+   */
   const fetchUser = async () => {
     const token = Cookies.get('access_token');
     if (!token) {
@@ -68,12 +84,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  /**
+   * Store authentication tokens in cookies
+   */
   const login = (accessToken: string, refreshToken: string) => {
     Cookies.set('access_token', accessToken, { expires: 7, sameSite: 'lax' });
     Cookies.set('refresh_token', refreshToken, { expires: 7, sameSite: 'lax' });
     fetchUser();
   };
 
+  /**
+   * Clear authentication tokens and user data
+   */
   const logout = () => {
     Cookies.remove('access_token');
     Cookies.remove('refresh_token');
@@ -81,35 +103,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAuthenticated(false);
   };
 
+  // Initialize auth and listen for auth changes
   useEffect(() => {
     fetchUser();
-    
-    // Listen for auth changes 
+
     const handleAuthChange = () => {
       fetchUser();
     };
-    
+
     window.addEventListener('auth-changed', handleAuthChange);
-    
+
     return () => {
       window.removeEventListener('auth-changed', handleAuthChange);
     };
   }, []);
 
+  const value: AuthContextType = {
+    user,
+    isAuthenticated,
+    isLoading,
+    login,
+    logout,
+    fetchUser,
+  };
+
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isAuthenticated, 
-      isLoading,
-      login, 
-      logout, 
-      fetchUser
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 }
 
+// ============ Hooks ============
+/**
+ * Hook to access authentication context
+ * @throws {Error} if used outside AuthProvider
+ */
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -118,7 +147,10 @@ export function useAuth() {
   return context;
 }
 
-// Export helper function for getting auth headers
+// ============ Utilities ============
+/**
+ * Get authentication headers with bearer token
+ */
 export function getAuthHeaders(): HeadersInit {
   const token = Cookies.get('access_token');
   const headers: HeadersInit = {

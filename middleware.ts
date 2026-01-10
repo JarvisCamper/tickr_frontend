@@ -8,7 +8,7 @@ export default function middleware(request: NextRequest) {
   console.log("PATH:", pathname);
   console.log("TOKEN:", accessToken);
 
-  const publicRoutes = ["/", "/login", "/signup"];
+  const publicRoutes = ["/", "/login", "/signup", "/features"];
   // Allow AcceptInvite pages to be accessed without auth (they handle their own auth check)
   const isAcceptInvitePage = pathname.startsWith("/teams/AcceptInvite/");
   const isPublicRoute = publicRoutes.includes(pathname) || isAcceptInvitePage;

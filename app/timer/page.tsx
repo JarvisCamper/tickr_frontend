@@ -39,9 +39,12 @@ export default function TimerPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchProjects();
-      fetchTimeEntries();
-      checkActiveTimer();
+      // Fetch all data in parallel instead of sequentially
+      Promise.all([
+        fetchProjects(),
+        fetchTimeEntries(),
+        checkActiveTimer()
+      ]);
     }
   }, [isAuthenticated]);
 
@@ -74,8 +77,10 @@ export default function TimerPage() {
 
   // When description or project changes while timer is running, PATCH the active entry so server stores latest values
   useEffect(() => {
-    const updateActive = async () => {
-      if (!isRunning || !activeEntryId) return;
+    if (!isRunning || !activeEntryId) return;
+
+    // Debounce updates to reduce API calls - wait 1 second after user stops typing
+    const timeoutId = setTimeout(async () => {
       try {
         const payload: any = {};
         if (description !== undefined) payload.description = description;
@@ -90,10 +95,9 @@ export default function TimerPage() {
       } catch (err) {
         console.error('Failed to update active entry:', err);
       }
-    };
+    }, 1000);
 
-    // Fire update (no debounce for simplicity). This updates server-side active entry so final saved entry uses latest description/project.
-    updateActive();
+    return () => clearTimeout(timeoutId);
   }, [description, selectedProjectId, isRunning, activeEntryId]);
 
   const fetchProjects = async () => {

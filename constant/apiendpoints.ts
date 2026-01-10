@@ -1,16 +1,25 @@
-// constant/apiendpoints.ts
-// Central API configuration
+// ============ Configuration ============
+/**
+ * Base API URL for all backend requests
+ * Falls back to localhost:8000/api if NEXT_PUBLIC_API_URL is not set
+ */
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
-// Build full endpoint URL safely
+// ============ Utilities ============
+/**
+ * Build full endpoint URL safely
+ * @param endpoint - API endpoint path
+ * @returns Full API URL
+ */
 export const getApiUrl = (endpoint: string): string => {
-  // remove starting slash to avoid double slashes
-  const cleanEndpoint = endpoint.startsWith("/")
+  // Remove starting slash to avoid double slashes
+  const cleanEndpoint = endpoint.startsWith('/')
     ? endpoint.slice(1)
     : endpoint;
 
-  const baseUrl = API_BASE_URL.endsWith("/")
+  // Remove trailing slash from base URL to avoid double slashes
+  const baseUrl = API_BASE_URL.endsWith('/')
     ? API_BASE_URL.slice(0, -1)
     : API_BASE_URL;
 

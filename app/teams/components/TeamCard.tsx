@@ -1,5 +1,6 @@
 import { Team, Project } from "../index/type";
 import { Button } from "../../components/Button";
+import { memo } from "react";
 
 interface TeamCardProps {
   team: Team;
@@ -28,7 +29,7 @@ function formatDate(dateString: string): string {
   return `${day}${suffix} ${month}, ${year}`;
 }
 
-export function TeamCard({
+const TeamCardComponent = ({
   team,
   projects,
   currentUserId,
@@ -37,22 +38,11 @@ export function TeamCard({
   onInvite,
   onAssignProject,
   onDelete,
-}: TeamCardProps) {
+}: TeamCardProps) => {
   // Filter projects assigned to this team - handle both team_id and team object
   const assignedProjects = projects.filter((p) => {
     const teamId = p.team_id || p.team?.id;
     return teamId === team.id;
-  });
-  
-  console.log(`TeamCard - ${team.name}:`, {
-    teamId: team.id,
-    totalProjects: projects.length,
-    assignedProjectsCount: assignedProjects.length,
-    assignedProjects: assignedProjects.map(p => ({
-      name: p.name,
-      team_id: p.team_id,
-      team: p.team
-    }))
   });
   
   // Ensure both IDs are numbers for comparison
@@ -172,4 +162,6 @@ export function TeamCard({
       </div>
     </div>
   );
-}
+};
+
+export const TeamCard = memo(TeamCardComponent);

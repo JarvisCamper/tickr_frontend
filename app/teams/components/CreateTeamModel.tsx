@@ -11,12 +11,16 @@ interface CreateTeamModalProps {
 export function CreateTeamModal({ isOpen, onClose, onCreate, isLoading }: CreateTeamModalProps) {
   const [teamName, setTeamName] = useState("");
   const [teamDescription, setTeamDescription] = useState("");
+const [creating, setCreating] = useState(false);
 
   if (!isOpen) return null;
 
   const handleCreate = async () => {
+    setCreating(true);
     const success = await onCreate(teamName, teamDescription);
+    setCreating(false);
     if (success) {
+      console.log("Team created successfully");
       setTeamName("");
       setTeamDescription("");
       onClose();
@@ -35,7 +39,7 @@ export function CreateTeamModal({ isOpen, onClose, onCreate, isLoading }: Create
         <h2 className="text-xl font-bold mb-4 text-gray-900">Create New Team</h2>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Team Name *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Team Name </label>
           <input
             type="text"
             value={teamName}
@@ -62,11 +66,12 @@ export function CreateTeamModal({ isOpen, onClose, onCreate, isLoading }: Create
         <div className="flex gap-2">
           <button
             onClick={handleCreate}
-            disabled={isLoading || !teamName.trim()}
+            disabled={creating || !teamName.trim()}
             className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
             {isLoading ? "Creating..." : "Create Team"}
           </button>
+          
           <button
             onClick={handleClose}
             className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors"

@@ -1,5 +1,6 @@
-import { getApiUrl } from "../../../constant/apiendpoints";
+import { getApiUrl } from '../../../constant/apiendpoints';
 
+// ============ Types ============
 export interface LoginRequest {
   username?: string;
   email?: string;
@@ -9,12 +10,21 @@ export interface LoginRequest {
 export interface LoginResponse {
   access: string;
   refresh: string;
-  user: any;
+  user: unknown;
 }
 
-export async function apiLogin(credentials: LoginRequest): Promise<LoginResponse> {
-  const url = getApiUrl("login/");
-  
+// ============ API ============
+/**
+ * Authenticate user and return access/refresh tokens
+ * @param credentials - User login credentials
+ * @returns Access token, refresh token, and user data
+ * @throws {Error} If login fails
+ */
+export async function apiLogin(
+  credentials: LoginRequest
+): Promise<LoginResponse> {
+  const url = getApiUrl('login/');
+
   const payload = {
     username: credentials.username,
     email: credentials.email,
@@ -22,8 +32,8 @@ export async function apiLogin(credentials: LoginRequest): Promise<LoginResponse
   };
 
   const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
 

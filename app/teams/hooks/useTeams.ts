@@ -70,42 +70,36 @@ export function useTeams() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch all teams
+  // Fetch all teams (optimized with parallel requests)
   const fetchTeams = useCallback(async () => {
     try {
       setLoading(true);
       
-      const response = await fetch(getApiUrl("teams/"), {
-        headers: getAuthHeaders(),
-      });
+      // Fetch both owned and joined teams in parallel
+      const [ownedResponse, joinedResponse] = await Promise.allSettled([
+        fetch(getApiUrl("teams/"), { headers: getAuthHeaders() }),
+        fetch(getApiUrl("teams/joined/"), { headers: getAuthHeaders() })
+      ]);
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch teams: ${response.status}`);
+      let allTeams: Team[] = [];
+
+      // Process owned teams
+      if (ownedResponse.status === 'fulfilled' && ownedResponse.value.ok) {
+        const data = await ownedResponse.value.json();
+        allTeams = data.map(ensureOwnerInMembers);
+      } else if (ownedResponse.status === 'fulfilled') {
+        throw new Error(`Failed to fetch teams: ${ownedResponse.value.status}`);
       }
 
-      const data = await response.json();
-      const processedTeams = data.map(ensureOwnerInMembers);
-      
-      // Try to fetch joined teams
-      let allTeams = processedTeams;
-      try {
-        const joinedResponse = await fetch(getApiUrl("teams/joined/"), {
-          headers: getAuthHeaders(),
-        });
-        
-        if (joinedResponse.ok) {
-          const joinedData = await joinedResponse.json();
-          const processedJoined = joinedData.map(ensureOwnerInMembers);
-          
-          const ownedIds = new Set(processedTeams.map((t: Team) => t.id));
-          allTeams = [
-            ...processedTeams,
-            ...processedJoined.filter((t: Team) => !ownedIds.has(t.id))
-          ];
-        }
-      } catch (err) {
-        // Silently ignore if endpoint doesn't exist
-        console.warn("Joined teams endpoint not available:", err);
+      // Process joined teams
+      if (joinedResponse.status === 'fulfilled' && joinedResponse.value.ok) {
+        const joinedData = await joinedResponse.value.json();
+        const processedJoined = joinedData.map(ensureOwnerInMembers);
+        const ownedIds = new Set(allTeams.map((t: Team) => t.id));
+        allTeams = [
+          ...allTeams,
+          ...processedJoined.filter((t: Team) => !ownedIds.has(t.id))
+        ];
       }
       
       setTeams(allTeams);
@@ -133,14 +127,6 @@ export function useTeams() {
 
       const data = await response.json();
       const normalizedProjects = data.map(normalizeProject);
-      
-      console.log("📦 Projects fetched:", normalizedProjects.length);
-      console.log("📦 Projects with teams:", normalizedProjects.filter((p: Project) => p.team_id).map((p: Project) => ({
-        id: p.id,
-        name: p.name,
-        team_id: p.team_id,
-        team: p.team
-      })));
       
       setProjects(normalizedProjects);
     } catch (err) {

@@ -19,7 +19,7 @@ export default function Hero() {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-[1fr,2fr] gap-8 items-center">
 
-            {/* Left: Welcome copy + CTA (from original hero) */}
+            {/* Left: Welcome copy + CTA */}
             <div className="flex items-center justify-center">
               <div className="w-full max-w-sm text-left">
                 <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-6">Welcome to Tickr</h1>
@@ -81,14 +81,13 @@ export default function Hero() {
               <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">📱</span>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Mobile & Desktop</h3>
-              <p className="text-gray-600">Track time anywhere with our seamless apps for iOS, Android, and web.</p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2"> Desktop</h3>
+              <p className="text-gray-600">Track time anywhere with our seamless for web.</p>
             </div>
           </div>
         </div>
       </section>
-
-      {/* CTA Section - Also white, no black */}
+      {/* CTA Section */}
       <section className="bg-white py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto text-center">
           <div className="text-lg text-gray-600 mb-8">

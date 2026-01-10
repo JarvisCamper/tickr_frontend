@@ -1,4 +1,4 @@
-import { Metadata } from 'next'; // Optional: for page metadata
+import { Metadata } from 'next'; 
 import ReportClientWrapper from './ReportClientWrapper';
 
 export default function ReportsPage() {
