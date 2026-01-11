@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Cookies from 'js-cookie';
 
 // Type definitions
@@ -26,31 +26,11 @@ const PUBLIC_LINKS: NavLink[] = [
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
-
-  // ============ Hooks ============
-  useEffect(() => {
-    checkAuth();
-    window.addEventListener('auth-changed', checkAuth);
-    return () => window.removeEventListener('auth-changed', checkAuth);
-  }, []);
-
-  // ============ Methods ============
-  /**
-   * Check authentication status and fetch user info if authenticated
-   */
-  const checkAuth = () => {
-    const token = Cookies.get('access_token');
-    setIsAuthenticated(!!token);
-    if (token) {
-      fetchUserInfo();
-    } else {
-      setUserEmail(null);
-    }
-  };
 
   /**
    * Fetch user information from the API
@@ -59,7 +39,7 @@ export default function Navbar() {
     try {
       const token = Cookies.get('access_token');
       const { getApiUrl } = await import('@/constant/apiendpoints');
-      const response = await fetch(getApiUrl('user/'), {
+      const response = await fetch(getApiUrl('/api/user/'), {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -78,6 +58,19 @@ export default function Navbar() {
   };
 
   /**
+   * Check authentication status and fetch user info if authenticated
+   */
+  const checkAuth = () => {
+    const token = Cookies.get('access_token');
+    setIsAuthenticated(!!token);
+    if (token) {
+      fetchUserInfo();
+    } else {
+      setUserEmail(null);
+    }
+  };
+
+  /**
    * Handle user logout
    */
   const handleLogout = () => {
@@ -88,6 +81,19 @@ export default function Navbar() {
     window.dispatchEvent(new Event('auth-changed'));
     router.push('/');
   };
+
+  // ============ Hooks ============
+  useEffect(() => {
+    checkAuth();
+    window.addEventListener('auth-changed', checkAuth);
+    return () => window.removeEventListener('auth-changed', checkAuth);
+  }, []);
+
+  // Hide navbar on admin routes - check AFTER hooks
+  if (pathname.startsWith('/admin')) {
+    return null;
+  }
+
   // ============ Render ============
   return (
     <nav className="fixed top-0 left-0 right-0 bg-white px-4 sm:px-8 py-4 shadow-md z-50">

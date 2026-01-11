@@ -1,10 +1,10 @@
 // ============ Configuration ============
 /**
  * Base API URL for all backend requests
- * Falls back to localhost:8000/api if NEXT_PUBLIC_API_URL is not set
+ * Falls back to localhost:8000 if NEXT_PUBLIC_API_URL is not set
  */
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // ============ Utilities ============
 /**

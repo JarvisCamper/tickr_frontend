@@ -5,10 +5,13 @@ import { getApiUrl } from '@/constant/apiendpoints';
 import { getAuthHeaders } from '@/context-and-provider/AuthContext';
 import type { Activity } from '../types/report.types';
 
+const cache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TIME = 30000; // 30 seconds
+
 export function secondsToHMS(totalSeconds: number) {
   const hrs = Math.floor(totalSeconds / 3600);
   const mins = Math.floor((totalSeconds % 3600) / 60);
-  const secs = totalSeconds % 60;
+  const secs = Math.floor(totalSeconds % 60);
   return `${hrs}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
@@ -31,36 +34,57 @@ export function useReports() {
   const [activeSeconds, setActiveSeconds] = useState(0);
 
   const fetchData = useCallback(async () => {
+    const cacheKey = 'reports_data';
+    const cached = cache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_TIME) {
+      setActivities(cached.data.activities);
+      setActiveEntry(cached.data.activeEntry);
+      if (cached.data.activeEntry) {
+        const startTime = cached.data.activeEntry.started_at || cached.data.activeEntry.start_time;
+        if (startTime) {
+          const elapsed = Math.floor((Date.now() - new Date(startTime).getTime()) / 1000);
+          setActiveSeconds(Math.max(0, elapsed));
+        }
+      }
+      setLoading(false);
+      return;
+    }
+
     try {
       const [entriesRes, activeRes] = await Promise.all([
-        fetch(getApiUrl('entries/'), { headers: getAuthHeaders(), credentials: 'include' }),
-        fetch(getApiUrl('entries/active/'), { headers: getAuthHeaders(), credentials: 'include' })
+        fetch(getApiUrl('/api/entries/'), { headers: getAuthHeaders(), credentials: 'include' }),
+        fetch(getApiUrl('/api/entries/active/'), { headers: getAuthHeaders(), credentials: 'include' })
       ]);
 
       if (entriesRes.ok) {
         const entries = await entriesRes.json();
         const mapped: Activity[] = entries.map((e: any) => ({
           id: String(e.id),
-          project: e.project?.name || 'No project',
+          project: e.project?.name || e.project_name || e.project || 'No project',
           seconds: parseDuration(e.duration || e.duration_seconds),
           date: e.start_time || e.created_at || '',
         }));
         setActivities(mapped);
-      }
 
-      if (activeRes.ok) {
-        const active = await activeRes.json();
-        if (active?.is_running) {
-          setActiveEntry(active);
-          const startTime = active.started_at || active.start_time;
-          if (startTime) {
-            const elapsed = Math.floor((Date.now() - new Date(startTime).getTime()) / 1000);
-            setActiveSeconds(Math.max(0, elapsed));
+        let activeData = null;
+        if (activeRes.ok) {
+          const active = await activeRes.json();
+          if (active?.is_running) {
+            setActiveEntry(active);
+            activeData = active;
+            const startTime = active.started_at || active.start_time;
+            if (startTime) {
+              const elapsed = Math.floor((Date.now() - new Date(startTime).getTime()) / 1000);
+              setActiveSeconds(Math.max(0, elapsed));
+            }
+          } else {
+            setActiveEntry(null);
+            setActiveSeconds(0);
           }
-        } else {
-          setActiveEntry(null);
-          setActiveSeconds(0);
         }
+
+        cache.set(cacheKey, { data: { activities: mapped, activeEntry: activeData }, timestamp: Date.now() });
       }
     } catch (err) {
       setError('Failed to load data');

@@ -14,13 +14,17 @@ interface User {
   id: number;
   email: string;
   username: string;
+  is_superuser?: boolean;
+  is_staff?: boolean;
+  is_admin?: boolean;
+  role?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (accessToken: string, refreshToken: string) => void;
+  login: (accessToken: string, refreshToken: string, userData?: User | null) => void;
   logout: () => void;
   fetchUser: () => Promise<void>;
 }
@@ -62,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const { getApiUrl } = await import('@/constant/apiendpoints');
-      const response = await fetch(getApiUrl('user/'), {
+      const response = await fetch(getApiUrl('/api/user/'), {
         headers: getAuthHeaders(),
       });
       if (response.ok) {
@@ -87,10 +91,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /**
    * Store authentication tokens in cookies
    */
-  const login = (accessToken: string, refreshToken: string) => {
+  const login = (accessToken: string, refreshToken: string, userData?: User | null) => {
     Cookies.set('access_token', accessToken, { expires: 7, sameSite: 'lax' });
     Cookies.set('refresh_token', refreshToken, { expires: 7, sameSite: 'lax' });
-    fetchUser();
+
+    if (userData) {
+      setUser(userData);
+      setIsAuthenticated(true);
+      setIsLoading(false);
+    } else {
+      fetchUser();
+    }
   };
 
   /**

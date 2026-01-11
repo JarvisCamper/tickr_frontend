@@ -39,10 +39,6 @@ export default function ReportDashboard() {
     error,
     activeEntry,
     activeSeconds,
-    live,
-    setLive,
-    pollIntervalMs,
-    setPollIntervalMs,
     secondsToHMS,
   } = useReports();
 
@@ -128,9 +124,6 @@ export default function ReportDashboard() {
               <option value="monthly">Monthly</option>
               <option value="weekly">Weekly</option>
             </select>
-          </label>
-          <label className="flex items-center gap-2" title="When checked the dashboard will auto-refresh from the server">
-            <input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} /> Auto-refresh
           </label>
         </div>
       </div>

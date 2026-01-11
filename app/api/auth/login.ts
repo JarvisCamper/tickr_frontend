@@ -11,6 +11,7 @@ export interface LoginResponse {
   access: string;
   refresh: string;
   user: unknown;
+  redirect_url?: string;
 }
 
 // ============ API ============
@@ -23,7 +24,7 @@ export interface LoginResponse {
 export async function apiLogin(
   credentials: LoginRequest
 ): Promise<LoginResponse> {
-  const url = getApiUrl('login/');
+  const url = getApiUrl('/api/login/');
 
   const payload = {
     username: credentials.username,
@@ -40,12 +41,13 @@ export async function apiLogin(
   const body = await res.json();
 
   if (!res.ok) {
-    throw new Error(body?.message || JSON.stringify(body));
+    throw body;
   }
 
   return {
     access: body.access,
     refresh: body.refresh,
     user: body.user,
+    redirect_url: body.redirect_url || (body.user && (body.user as any).role === 'admin' ? '/admin' : '/timer'),
   };
 }

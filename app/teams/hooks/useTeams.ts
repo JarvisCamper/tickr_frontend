@@ -77,8 +77,8 @@ export function useTeams() {
       
       // Fetch both owned and joined teams in parallel
       const [ownedResponse, joinedResponse] = await Promise.allSettled([
-        fetch(getApiUrl("teams/"), { headers: getAuthHeaders() }),
-        fetch(getApiUrl("teams/joined/"), { headers: getAuthHeaders() })
+        fetch(getApiUrl("/api/teams/"), { headers: getAuthHeaders() }),
+        fetch(getApiUrl("/api/teams/joined/"), { headers: getAuthHeaders() })
       ]);
 
       let allTeams: Team[] = [];
@@ -117,7 +117,7 @@ export function useTeams() {
   // Fetch all projects
   const fetchProjects = useCallback(async () => {
     try {
-      const response = await fetch(getApiUrl("projects/"), {
+      const response = await fetch(getApiUrl("/api/projects/"), {
         headers: getAuthHeaders(),
       });
 
@@ -140,7 +140,7 @@ export function useTeams() {
     try {
       checkAuth();
       
-      const response = await fetch(getApiUrl("teams/"), {
+      const response = await fetch(getApiUrl("/api/teams/"), {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({ name, description }),

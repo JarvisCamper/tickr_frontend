@@ -1,9 +1,19 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export default function Footer() {
+  const pathname = usePathname();
+
+  // Hide footer on admin routes
+  if (pathname.startsWith('/admin')) {
+    return null;
+  }
+
   return (
-    <footer className="fixed bottom-0 left-0 right-0 bg-gray-800 text-white py-4 z-50">
+    <footer className="bg-gray-800 text-white py-4 mt-auto">
       <div className="max-w-6xl mx-auto px-4 sm:px-8">
         <div className="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
           <div className="text-sm">

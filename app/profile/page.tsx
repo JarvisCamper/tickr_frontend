@@ -26,7 +26,7 @@ export default function ProfilePage() {
           router.push('/login');
           return;
         }
-        const response = await fetch(getApiUrl('user/'), {
+        const response = await fetch(getApiUrl('/api/user/'), {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
@@ -67,7 +67,7 @@ export default function ProfilePage() {
       form.append('email', email.trim());
       form.append('username', username.trim());
 
-      const response = await fetch(getApiUrl('user/'), {
+      const response = await fetch(getApiUrl('/api/user/'), {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -126,7 +126,7 @@ export default function ProfilePage() {
       form.append('avatar', file);
 
       // First try: PATCH to 'user/' with multipart form data (many DRF setups accept this)
-      let resp = await fetch(getApiUrl('user/'), {
+      let resp = await fetch(getApiUrl('/api/user/'), {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -137,7 +137,7 @@ export default function ProfilePage() {
       // If backend doesn't accept PATCH multipart, try POST to 'user/avatar/' (older or custom endpoints)
       if (resp.status === 404 || resp.status === 405 || resp.status === 400) {
         try {
-          resp = await fetch(getApiUrl('user/avatar/'), {
+          resp = await fetch(getApiUrl('/api/user/avatar/'), {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -190,7 +190,7 @@ export default function ProfilePage() {
         return;
       }
 
-      const resp = await fetch(getApiUrl('user/avatar/'), {
+      const resp = await fetch(getApiUrl('/api/user/avatar/'), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -203,7 +203,7 @@ export default function ProfilePage() {
         window.dispatchEvent(new Event('auth-changed'));
       } else {
         // fallback: PATCH user/ with avatar null
-        const patchResp = await fetch(getApiUrl('user/'), {
+        const patchResp = await fetch(getApiUrl('/api/user/'), {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',

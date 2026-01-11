@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { TimeControl } from './components/TimeControl';  
 import { TimeEntriesTable } from './components/TimeEntriesTable';
@@ -28,6 +28,7 @@ export default function TimerPage() {
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const initLoadedRef = useRef(false);
   
   const entriesPerPage = 10;
 
@@ -38,19 +39,21 @@ export default function TimerPage() {
   }, [isAuthenticated, authLoading, router]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      // Fetch all data in parallel instead of sequentially
-      Promise.all([
-        fetchProjects(),
-        fetchTimeEntries(),
-        checkActiveTimer()
-      ]);
-    }
+    // Prevent double invocation under React Strict Mode in dev
+    if (!isAuthenticated || initLoadedRef.current) return;
+    initLoadedRef.current = true;
+
+    // Fetch all data in parallel instead of sequentially
+    Promise.all([
+      fetchProjects(),
+      fetchTimeEntries(),
+      checkActiveTimer()
+    ]);
   }, [isAuthenticated]);
 
   const checkActiveTimer = async () => {
     try {
-      const response = await fetch(getApiUrl("entries/active/"), {
+      const response = await fetch(getApiUrl("/api/entries/active/"), {
         headers: getAuthHeaders(),
         credentials: 'include',
       });
@@ -102,7 +105,7 @@ export default function TimerPage() {
 
   const fetchProjects = async () => {
     try {
-      const response = await fetch(getApiUrl("projects/"), {
+      const response = await fetch(getApiUrl("/api/projects/"), {
         headers: getAuthHeaders(),
         credentials: 'include',
       });
@@ -121,7 +124,7 @@ export default function TimerPage() {
 
   const fetchTimeEntries = async () => {
     try {
-      const response = await fetch(getApiUrl("entries/"), {
+      const response = await fetch(getApiUrl("/api/entries/"), {
         headers: getAuthHeaders(),
         credentials: 'include',
       });
@@ -153,7 +156,7 @@ export default function TimerPage() {
         payload.project_id = selectedProjectId;
       }
 
-      const response = await fetch(getApiUrl("entries/start/"), {
+      const response = await fetch(getApiUrl("/api/entries/start/"), {
         method: "POST",
         headers: getAuthHeaders(),
         credentials: 'include',
@@ -171,7 +174,7 @@ export default function TimerPage() {
         } else {
           // attempt to fetch active entry to obtain id/start time
           try {
-            const activeResp = await fetch(getApiUrl('entries/active/'), { headers: getAuthHeaders(), credentials: 'include' });
+            const activeResp = await fetch(getApiUrl('/api/entries/active/'), { headers: getAuthHeaders(), credentials: 'include' });
             if (activeResp.ok) {
               const activeData = await activeResp.json().catch(() => null);
               if (activeData) {
@@ -197,7 +200,7 @@ export default function TimerPage() {
 
   const handleStop = async () => {
     try {
-      const response = await fetch(getApiUrl("entries/stop/"), {
+      const response = await fetch(getApiUrl("/api/entries/stop/"), {
         method: "POST",
         headers: getAuthHeaders(),
         credentials: 'include',
@@ -234,7 +237,7 @@ export default function TimerPage() {
         type: "individual",
       };
 
-      const response = await fetch(getApiUrl("projects/"), {
+      const response = await fetch(getApiUrl("/api/projects/"), {
         method: "POST",
         headers: getAuthHeaders(),
         credentials: 'include',

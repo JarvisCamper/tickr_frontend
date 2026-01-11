@@ -59,7 +59,7 @@ const ProjectsPage = () => {
   // Fetch current user
   const fetchCurrentUser = async () => {
     try {
-      const response = await fetch(getApiUrl("user/"), {
+      const response = await fetch(getApiUrl("/api/user/"), {
         headers: getAuthHeaders(),
       });
       if (response.ok) {
@@ -74,7 +74,7 @@ const ProjectsPage = () => {
   // Fetch projects - only user's own projects
   const fetchProjects = async () => {
     try {
-      const response = await fetch(getApiUrl("projects/"), {
+      const response = await fetch(getApiUrl("/api/projects/"), {
         headers: getAuthHeaders(),
       });
       if (response.ok) {
@@ -91,6 +91,7 @@ const ProjectsPage = () => {
   };
 
   useEffect(() => {
+    fetchCurrentUser();
     fetchProjects();
   }, []);
 
@@ -188,7 +189,7 @@ const ProjectsPage = () => {
         projectData.team_id = parseInt(newProject.team_id);
       }
 
-      const response = await fetch(getApiUrl("projects/"), {
+      const response = await fetch(getApiUrl("/api/projects/"), {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(projectData),

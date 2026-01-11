@@ -28,7 +28,7 @@ export interface SignupResponse {
 export async function signup(
   credentials: SignupRequest
 ): Promise<SignupResponse> {
-  const url = getApiUrl('signup/');
+  const url = getApiUrl('/api/signup/');
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

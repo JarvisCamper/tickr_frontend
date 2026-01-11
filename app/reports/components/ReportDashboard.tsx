@@ -75,10 +75,17 @@ export default function ReportDashboard() {
     return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
   }, [activities]);
 
-  if (authLoading) return <div className="p-6 text-slate-600">Loading...</div>;
-  if (!isAuthenticated) return <div className="p-6 text-slate-600">Please log in.</div>;
-  if (loading) return <div className="p-6 text-slate-600">Loading data...</div>;
-  if (error) return <div className="p-6 text-red-600">{error}</div>;
+  if (authLoading) return <div className="min-h-screen flex items-center justify-center"><div className="text-lg text-slate-600">Loading...</div></div>;
+  if (!isAuthenticated) return <div className="min-h-screen flex items-center justify-center"><div className="text-lg text-slate-600">Please log in.</div></div>;
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <div className="text-lg text-slate-600">Loading your data...</div>
+      </div>
+    </div>
+  );
+  if (error) return <div className="min-h-screen flex items-center justify-center"><div className="text-lg text-red-600">{error}</div></div>;
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-blue-50 p-6">

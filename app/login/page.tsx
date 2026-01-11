@@ -9,7 +9,7 @@ import { apiLogin } from "../api/auth/login";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -18,14 +18,14 @@ function LoginForm() {
   const [debugInfo, setDebugInfo] = useState<any>(null);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      const redirectParam = searchParams.get("redirect");
-      const redirectTo = redirectParam
-        ? (redirectParam.includes('/teams/AcceptInvite') ? '/teams' : redirectParam)
-        : '/timer';
-      router.push(redirectTo);
+    // If already authenticated on page load, redirect
+    if (isAuthenticated && user) {
+      const userData = user as any;
+      const isAdmin = userData.is_admin || userData.is_staff || userData.is_superuser || userData.role === 'admin';
+      const target = isAdmin ? '/admin' : '/timer';
+      router.replace(target);
     }
-  }, [isAuthenticated, router, searchParams]);
+  }, [isAuthenticated, user, router]);
 
   const togglePass = () => setShowPass(!showPass);
 
@@ -35,30 +35,57 @@ function LoginForm() {
     setIsLoading(true);
 
     try {
-      // Use central auth helper which will try token/login endpoints and normalize tokens
-      const tokens = await apiLogin({ email, password });
+      const response = await apiLogin({ email, password });
+      setDebugInfo(response.user);
+      console.log('=== LOGIN RESPONSE ===');
+      console.log('Full response:', response);
+      console.log('User:', response.user);
+      console.log('Redirect URL:', response.redirect_url);
+      console.log('==================');
 
-      // clear debug on success
-      setDebugInfo(null);
-
-      login(tokens.access, tokens.refresh);
+      // Set auth with user data from response
+      login(response.access, response.refresh, response.user as any);
+      
+      // Dispatch event to trigger navbar update
       window.dispatchEvent(new Event("auth-changed"));
+      
+      // Use the redirect_url from backend
+      const redirectTarget = response.redirect_url || '/timer';
+      console.log('Final redirect target:', redirectTarget);
+      router.replace(redirectTarget);
 
-      const redirectTo = searchParams.get("redirect") || "/timer";
-      window.location.href = redirectTo;
     } catch (err: any) {
-      // Show detailed message whether err is Error, string, or object
-      const msg =
-        typeof err === "string"
-          ? err
-          : err instanceof Error
-          ? err.message
-          : err && typeof err === "object"
-          ? JSON.stringify(err)
-          : "Login failed";
-      setError(msg);
-      // capture raw details if present
-      setDebugInfo(err?.details || err);
+      // Parse and show user-friendly error messages
+      let errorMessage = "Login failed. Please try again.";
+      
+      if (typeof err === "string") {
+        try {
+          const parsed = JSON.parse(err);
+          if (parsed.detail) {
+            errorMessage = parsed.detail === "No active account found with the given credentials"
+              ? "Invalid email or password. Please check your credentials."
+              : parsed.detail;
+          }
+        } catch {
+          errorMessage = err;
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (err && typeof err === "object") {
+        // Handle common error formats from API
+        if (err.detail) {
+          errorMessage = err.detail === "No active account found with the given credentials"
+            ? "Invalid email or password. Please check your credentials."
+            : err.detail;
+        } else if (err.message) {
+          errorMessage = err.message;
+        } else if (err.error) {
+          errorMessage = err.error;
+        }
+      }
+      
+      setError(errorMessage);
+      setDebugInfo(null);
     } finally {
       setIsLoading(false);
     }
