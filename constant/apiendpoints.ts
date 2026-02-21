@@ -20,13 +20,14 @@ export const getApiUrl = (endpoint: string): string => {
   }
 
   // Collapse accidental duplicate /api prefixes:
-  // /api/api/login/ -> /api/login/
+ 
   normalizedEndpoint = normalizedEndpoint.replace(/^\/api(?:\/api)+\//, '/api/');
 
-  // Remove trailing slash from base URL to avoid double slashes
-  const baseUrl = API_BASE_URL.endsWith('/')
-    ? API_BASE_URL.slice(0, -1)
-    : API_BASE_URL;
+  // Normalize base URL:
+  // - remove trailing slash
+  // - remove trailing repeated /api (if env var already includes it)
+  //   e.g. https://host/api or https://host/api/api -> https://host
+  const baseUrl = API_BASE_URL.replace(/\/+$/, '').replace(/(?:\/api)+$/i, '');
 
   return `${baseUrl}${normalizedEndpoint}`;
 };
