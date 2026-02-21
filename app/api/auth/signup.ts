@@ -1,3 +1,5 @@
+import { getApiUrl } from '../../../constant/apiendpoints';
+
 // ============ Types ============
 export interface SignupRequest {
   username: string;
@@ -25,7 +27,7 @@ export interface SignupResponse {
 export async function signup(
   credentials: SignupRequest
 ): Promise<SignupResponse> {
-  const url = 'https://tickr-backend.vercel.app/api/api/signup/';
+  const url = getApiUrl('/api/signup/');
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

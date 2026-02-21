@@ -164,7 +164,7 @@ export function useTeams() {
   // Delete a team
   const deleteTeam = async (teamId: number) => {
     try {
-      const response = await fetch(getApiUrl(`teams/${teamId}/`), {
+      const response = await fetch(getApiUrl(`/api/teams/${teamId}/`), {
         method: "DELETE",
         headers: getAuthHeaders(),
       });
@@ -185,7 +185,7 @@ export function useTeams() {
   // Generate invite link
   const generateInviteLink = async (teamId: number) => {
     try {
-      const response = await fetch(getApiUrl(`teams/${teamId}/invite/`), {
+      const response = await fetch(getApiUrl(`/api/teams/${teamId}/invite/`), {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({}),
@@ -236,7 +236,7 @@ export function useTeams() {
         throw new Error("Team not found");
       }
       
-      const response = await fetch(getApiUrl(`teams/${teamId}/members/`), {
+      const response = await fetch(getApiUrl(`/api/teams/${teamId}/members/`), {
         headers: getAuthHeaders(),
       });
 
@@ -271,7 +271,7 @@ export function useTeams() {
   // Remove team member
   const removeTeamMember = async (teamId: number, userId: number) => {
     try {
-      const response = await fetch(getApiUrl(`teams/${teamId}/remove-member/`), {
+      const response = await fetch(getApiUrl(`/api/teams/${teamId}/remove-member/`), {
         method: "DELETE",
         headers: getAuthHeaders(),
         body: JSON.stringify({ user_id: userId }),
@@ -293,7 +293,7 @@ export function useTeams() {
   // Assign project to team
   const assignProject = async (teamId: number, projectId: number) => {
     try {
-      const endpoint = `teams/${teamId}/assign-project/`;
+      const endpoint = `/api/teams/${teamId}/assign-project/`;
       const fullUrl = getApiUrl(endpoint);
       
       console.log("🔵 Assigning project:", { teamId, projectId });
@@ -338,7 +338,7 @@ export function useTeams() {
   // Unassign project from team
   const unassignProject = async (teamId: number, projectId: number) => {
     try {
-      const response = await fetch(getApiUrl(`teams/${teamId}/unassign-project/`), {
+      const response = await fetch(getApiUrl(`/api/teams/${teamId}/unassign-project/`), {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({ project_id: projectId }),

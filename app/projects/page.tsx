@@ -99,7 +99,7 @@ const ProjectsPage = () => {
     if (!window.confirm('Are you sure you want to delete this project?')) return;
 
     try {
-      const response = await fetch(getApiUrl(`projects/${id}/`), {
+      const response = await fetch(getApiUrl(`/api/projects/${id}/`), {
         method: "DELETE",
         headers: getAuthHeaders(),
       });
@@ -142,7 +142,7 @@ const ProjectsPage = () => {
         projectData.team_id = parseInt(newProject.team_id);
       }
 
-      const response = await fetch(getApiUrl(`projects/${editingProject.id}/`), {
+      const response = await fetch(getApiUrl(`/api/projects/${editingProject.id}/`), {
         method: "PATCH",
         headers: getAuthHeaders(),
         body: JSON.stringify(projectData),

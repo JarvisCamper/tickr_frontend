@@ -35,7 +35,7 @@ function LoginForm() {
     setIsLoading(true);
 
     try {
-      // response from POST /api/api/login/
+      // response from POST /api/login/
       const result = await apiLogin({ email, password });
       const data = result.data as any;
       setDebugInfo(data);

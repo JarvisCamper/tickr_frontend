@@ -33,7 +33,7 @@ export interface LoginApiResult {
 export async function apiLogin(
   credentials: LoginRequest
 ): Promise<LoginApiResult> {
-  const url = getApiUrl('/api/api/login/');
+  const url = getApiUrl('/api/login/');
 
   const payload = {
     username: credentials.username,

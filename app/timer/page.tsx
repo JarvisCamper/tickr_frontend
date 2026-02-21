@@ -89,7 +89,7 @@ export default function TimerPage() {
         if (description !== undefined) payload.description = description;
         if (selectedProjectId !== undefined) payload.project_id = selectedProjectId;
 
-        await fetch(getApiUrl(`entries/${activeEntryId}/`), {
+        await fetch(getApiUrl(`/api/entries/${activeEntryId}/`), {
           method: 'PATCH',
           headers: getAuthHeaders(),
           credentials: 'include',
@@ -282,7 +282,7 @@ export default function TimerPage() {
 
   const handleSaveEdit = async (entryId: number, updates: Partial<TimeEntry>) => {
     try {
-      const response = await fetch(getApiUrl(`entries/${entryId}/`), {
+      const response = await fetch(getApiUrl(`/api/entries/${entryId}/`), {
         method: "PATCH",
         headers: getAuthHeaders(),
         credentials: 'include',
@@ -309,7 +309,7 @@ export default function TimerPage() {
     if (!confirm("Are you sure you want to delete this entry?")) return;
 
     try {
-      const response = await fetch(getApiUrl(`entries/${id}/`), {
+      const response = await fetch(getApiUrl(`/api/entries/${id}/`), {
         method: "DELETE",
         headers: getAuthHeaders(),
         credentials: 'include',

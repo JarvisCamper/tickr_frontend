@@ -1,10 +1,10 @@
 // ============ Configuration ============
 /**
  * Base API URL for all backend requests
- * Falls back to localhost:8000 if NEXT_PUBLIC_API_URL is not set
+ * Falls back to production backend if NEXT_PUBLIC_API_URL is not set
  */
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  process.env.NEXT_PUBLIC_API_URL || 'https://tickr-backend.vercel.app';
 
 // ============ Utilities ============
 /**
@@ -13,15 +13,20 @@ export const API_BASE_URL =
  * @returns Full API URL
  */
 export const getApiUrl = (endpoint: string): string => {
-  // Remove starting slash to avoid double slashes
-  const cleanEndpoint = endpoint.startsWith('/')
-    ? endpoint.slice(1)
-    : endpoint;
+  // Normalize to a single leading slash
+  let normalizedEndpoint = endpoint.trim().replace(/^\/+/, '/');
+  if (!normalizedEndpoint.startsWith('/')) {
+    normalizedEndpoint = `/${normalizedEndpoint}`;
+  }
+
+  // Collapse accidental duplicate /api prefixes:
+  // /api/api/login/ -> /api/login/
+  normalizedEndpoint = normalizedEndpoint.replace(/^\/api(?:\/api)+\//, '/api/');
 
   // Remove trailing slash from base URL to avoid double slashes
   const baseUrl = API_BASE_URL.endsWith('/')
     ? API_BASE_URL.slice(0, -1)
     : API_BASE_URL;
 
-  return `${baseUrl}/${cleanEndpoint}`;
+  return `${baseUrl}${normalizedEndpoint}`;
 };

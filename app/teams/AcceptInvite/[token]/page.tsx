@@ -74,7 +74,7 @@ export default function AcceptInvitePage() {
     setLoadingDetails(true);
     try {
       const response = await fetch(
-        getApiUrl(`teams/invitations/${token}/`),
+        getApiUrl(`/api/teams/invitations/${token}/`),
         {
           method: 'GET',
           headers: {
@@ -151,7 +151,7 @@ export default function AcceptInvitePage() {
 
     try {
       const response = await fetch(
-        getApiUrl(`teams/invitations/${token}/accept/`),
+        getApiUrl(`/api/teams/invitations/${token}/accept/`),
         {
           method: 'POST',
           headers: getAuthHeaders(),
