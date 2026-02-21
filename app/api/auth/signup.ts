@@ -1,12 +1,9 @@
-import Cookies from 'js-cookie';
-import { apiLogin } from './login';
-import { getApiUrl } from '../../../constant/apiendpoints';
-
 // ============ Types ============
 export interface SignupRequest {
   username: string;
   email: string;
   password: string;
+  confirmPassword: string;
 }
 
 export interface SignupResponse {
@@ -20,15 +17,15 @@ export interface SignupResponse {
 
 // ============ API ============
 /**
- * Register new user and auto-login with provided credentials
+ * Register new user with backend signup endpoint
  * @param credentials - User registration details
  * @returns Signup response from server
- * @throws {Error} If signup or auto-login fails
+ * @throws {Error} If signup fails
  */
 export async function signup(
   credentials: SignupRequest
 ): Promise<SignupResponse> {
-  const url = getApiUrl('/api/signup/');
+  const url = 'https://tickr-backend.vercel.app/api/api/signup/';
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -55,20 +52,6 @@ export async function signup(
       `Signup failed (status ${response.status})`;
     throw new Error(errorMsg);
   }
-
-  // Auto-login after successful signup
-  const tokens = await apiLogin({
-    email: credentials.email,
-    username: credentials.username,
-    password: credentials.password,
-  });
-
-  // Store tokens in cookies for AuthContext
-  Cookies.set('access_token', tokens.access, { expires: 7, sameSite: 'lax' });
-  Cookies.set('refresh_token', tokens.refresh, {
-    expires: 7,
-    sameSite: 'lax',
-  });
 
   return resultBody;
 }

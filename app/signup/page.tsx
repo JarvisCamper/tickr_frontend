@@ -32,14 +32,13 @@ function SignupForm() {
     }
 
     try {
-      // Use central signup helper which also performs auto-login and sets cookies
-      await apiSignup({ username, email, password });
+      await apiSignup({ username, email, password, confirmPassword: password2 });
 
       // clear debug on success
       setDebugInfo(null);
 
-      const redirectTo = searchParams.get("redirect") || "/teams";
-      window.location.href = redirectTo;
+      const redirectTo = searchParams.get("redirect") || "/login";
+      router.replace(redirectTo);
     } catch (err: any) {
       const msg =
         typeof err === "string"

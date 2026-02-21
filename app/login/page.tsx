@@ -35,24 +35,26 @@ function LoginForm() {
     setIsLoading(true);
 
     try {
-      const response = await apiLogin({ email, password });
-      setDebugInfo(response.user);
-      console.log('=== LOGIN RESPONSE ===');
-      console.log('Full response:', response);
-      console.log('User:', response.user);
-      console.log('Redirect URL:', response.redirect_url);
-      console.log('==================');
+      // response from POST /api/api/login/
+      const result = await apiLogin({ email, password });
+      const data = result.data as any;
+      setDebugInfo(data);
 
-      // Set auth with user data from response
-      login(response.access, response.refresh, response.user as any);
-      
-      // Dispatch event to trigger navbar update
+      if (!result.ok) {
+        setError(data.detail || "Login failed");
+        return;
+      }
+
+      // Save tokens client-side
+      localStorage.setItem("access", data.access);
+      localStorage.setItem("refresh", data.refresh);
+
+      // Keep existing app auth flow in sync (cookies + context)
+      login(data.access, data.refresh, data.user as any);
       window.dispatchEvent(new Event("auth-changed"));
-      
-      // Use the redirect_url from backend
-      const redirectTarget = response.redirect_url || '/timer';
-      console.log('Final redirect target:', redirectTarget);
-      router.replace(redirectTarget);
+
+      // Even shorter (recommended, uses backend decision):
+      router.replace(data.redirect_url || "/employee");
 
     } catch (err: any) {
       // Parse and show user-friendly error messages
@@ -162,7 +164,7 @@ function LoginForm() {
               </div>
 
               <div className="text-center text-sm text-gray-500">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <Link
                   href={
                     searchParams.get("redirect")
