@@ -13,7 +13,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { isAdmin, isLoading, user } = useAdminAuth();
+  const { isAdmin, isLoading } = useAdminAuth();
   const hasCheckedRef = useRef(false);
 
   useEffect(() => {
@@ -60,12 +60,12 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex bg-gray-50 min-h-screen">
+    <div className="flex bg-[linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] min-h-screen">
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <AdminHeader />
-        <main className="flex-1 overflow-auto p-8">
-          {children}
+        <main className="flex-1 overflow-auto p-6 md:p-8">
+          <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>
     </div>
