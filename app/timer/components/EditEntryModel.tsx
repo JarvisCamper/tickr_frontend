@@ -75,7 +75,7 @@ export function EditEntryModal({
     try {
       const updates: any = {
         description,
-        project_id: projectId,
+        project: projectId,
       };
 
       if (startTime) {

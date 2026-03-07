@@ -1,7 +1,6 @@
 "use client";
 
 import React from 'react';
-import { Project } from '../types';
 
 interface TimerControlProps {
   description: string;
@@ -13,6 +12,7 @@ interface TimerControlProps {
   formatTime: (seconds: number) => string;
   isRunning: boolean;
   isPaused: boolean;
+  isActionPending: boolean;
   onStart: () => void;
   onPause: () => void;
   onResume: () => void;
@@ -30,6 +30,7 @@ export function TimeControl({
   formatTime,
   isRunning,
   isPaused,
+  isActionPending,
   onStart,
   onPause,
   onResume,
@@ -73,14 +74,16 @@ export function TimeControl({
         {!isRunning ? (
           <button
             onClick={onStart}
-            className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-md transition-colors"
+            disabled={isActionPending}
+            className="px-6 py-3 bg-green-500 hover:bg-green-600 disabled:bg-green-300 disabled:cursor-not-allowed text-white font-semibold rounded-md transition-colors"
           >
             Start
           </button>
         ) : (
           <button
             onClick={onStop}
-            className="px-6 py-3 bg-red-400 hover:bg-red-500 text-white font-semibold rounded-md transition-colors"
+            disabled={isActionPending}
+            className="px-6 py-3 bg-red-400 hover:bg-red-500 disabled:bg-red-300 disabled:cursor-not-allowed text-white font-semibold rounded-md transition-colors"
           >
             Stop
           </button>

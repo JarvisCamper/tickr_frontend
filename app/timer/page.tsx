@@ -28,9 +28,19 @@ export default function TimerPage() {
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isActionPending, setIsActionPending] = useState(false);
   const initLoadedRef = useRef(false);
   
   const entriesPerPage = 10;
+  const getProjectId = (entry: any): number | null => {
+    const raw = entry?.project?.id ?? entry?.project ?? entry?.project_id ?? null;
+    if (typeof raw === 'number') return raw;
+    if (typeof raw === 'string' && raw.trim() !== '') {
+      const n = Number(raw);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
+  };
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -61,7 +71,7 @@ export default function TimerPage() {
         const data = await response.json();
         if (data && data.is_running) {
           setDescription(data.description);
-          setSelectedProjectId(data.project?.id || null);
+          setSelectedProjectId(getProjectId(data));
           setActiveEntryId(data.id || null);
           // If backend provides a start timestamp, use it to compute elapsed so timer continues correctly across reloads
           if (data.started_at) {
@@ -87,7 +97,7 @@ export default function TimerPage() {
       try {
         const payload: any = {};
         if (description !== undefined) payload.description = description;
-        if (selectedProjectId !== undefined) payload.project_id = selectedProjectId;
+        if (selectedProjectId !== undefined) payload.project = selectedProjectId;
 
         await fetch(getApiUrl(`/api/entries/${activeEntryId}/`), {
           method: 'PATCH',
@@ -142,18 +152,20 @@ export default function TimerPage() {
   };
 
   const handleStart = async () => {
+    if (isActionPending) return;
     if (!description.trim()) {
       showToast("Description is required to start timer", "error");
       return;
     }
 
+    setIsActionPending(true);
     try {
       const payload: any = {
         description: description.trim(),
       };
       
-      if (selectedProjectId) {
-        payload.project_id = selectedProjectId;
+      if (selectedProjectId !== null) {
+        payload.project = selectedProjectId;
       }
 
       const response = await fetch(getApiUrl("/api/entries/start/"), {
@@ -195,10 +207,14 @@ export default function TimerPage() {
     } catch (error) {
       console.error("Error starting timer:", error);
       showToast("Error starting timer", "error");
+    } finally {
+      setIsActionPending(false);
     }
   };
 
   const handleStop = async () => {
+    if (isActionPending) return;
+    setIsActionPending(true);
     try {
       const response = await fetch(getApiUrl("/api/entries/stop/"), {
         method: "POST",
@@ -221,6 +237,8 @@ export default function TimerPage() {
     } catch (error) {
       console.error("Error stopping timer:", error);
       showToast("Error stopping timer", "error");
+    } finally {
+      setIsActionPending(false);
     }
   };
 
@@ -359,6 +377,7 @@ export default function TimerPage() {
           formatTime={formatTime}
           isRunning={isRunning}
           isPaused={isPaused}
+          isActionPending={isActionPending}
           onStart={handleStart}
           onPause={pauseTimer}
           onResume={resumeTimer}
