@@ -8,6 +8,7 @@ const titleMap: Record<string, { title: string; subtitle: string }> = {
   "/admin/users": { title: "Users", subtitle: "Manage and review registered users" },
   "/admin/teams": { title: "Teams", subtitle: "Track team ownership and membership" },
   "/admin/projects": { title: "Projects", subtitle: "Review projects across all teams" },
+  "/admin/time-entries": { title: "Time Entries", subtitle: "Review active timers and completed work logs" },
   "/admin/analytics": { title: "Analytics", subtitle: "Growth and activity insights" },
   "/admin/activity-logs": { title: "Activity Logs", subtitle: "Audit events and actions" },
   "/admin/settings": { title: "Settings", subtitle: "Admin configuration and controls" },

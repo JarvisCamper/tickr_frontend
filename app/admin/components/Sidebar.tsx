@@ -8,6 +8,7 @@ import {
   Users,
   UsersRound,
   FolderKanban,
+  Timer,
   ChartColumn,
   ScrollText,
   Settings,
@@ -19,6 +20,7 @@ const menuItems = [
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Teams", href: "/admin/teams", icon: UsersRound },
   { label: "Projects", href: "/admin/projects", icon: FolderKanban },
+  { label: "Time Entries", href: "/admin/time-entries", icon: Timer },
   { label: "Analytics", href: "/admin/analytics", icon: ChartColumn },
   { label: "Activity Logs", href: "/admin/activity-logs", icon: ScrollText },
   { label: "Settings", href: "/admin/settings", icon: Settings },
@@ -28,7 +30,22 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      const token = Cookies.get("access_token");
+      const { getApiUrl } = await import("@/constant/apiendpoints");
+      await fetch(getApiUrl("/api/logout/"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Logout request failed:", error);
+    }
+
     Cookies.remove("access_token");
     Cookies.remove("refresh_token");
     router.push("/login");
@@ -69,7 +86,7 @@ export function Sidebar() {
 
       <div className="sticky bottom-0 left-0 right-0 p-4 border-t border-gray-100 bg-white">
         <button
-          onClick={handleLogout}
+          onClick={() => void handleLogout()}
           className="w-full px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl transition-colors font-medium flex items-center justify-center gap-2"
         >
           <LogOut size={16} />

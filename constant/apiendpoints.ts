@@ -1,10 +1,13 @@
 // ============ Configuration ============
 /**
  * Base API URL for all backend requests
- * Falls back to production backend if NEXT_PUBLIC_API_URL is not set
+ * Falls back to local backend in development and production backend otherwise
  */
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'https://tickr-backend.vercel.app';
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === 'development'
+    ? 'http://127.0.0.1:8000'
+    : 'https://tickr-backend.vercel.app');
 
 // ============ Utilities ============
 /**

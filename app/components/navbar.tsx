@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import Cookies from 'js-cookie';
+import { useAuth } from '@/context-and-provider/AuthContext';
 
 // Type definitions
 interface NavLink {
@@ -27,67 +28,33 @@ const PUBLIC_LINKS: NavLink[] = [
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
+  const { user, isAuthenticated } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [userAvatar, setUserAvatar] = useState<string | null>(null);
-
-  /**
-   * Fetch user information from the API
-   */
-  const fetchUserInfo = async () => {
-    try {
-      const token = Cookies.get('access_token');
-      const { getApiUrl } = await import('@/constant/apiendpoints');
-      const response = await fetch(getApiUrl('/api/user/'), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUserEmail(data.email);
-        setUserAvatar(
-          data.avatar || data.profile_picture || data.avatar_url || null
-        );
-      }
-    } catch (error) {
-      console.error('Failed to fetch user info:', error);
-    }
-  };
-
-  /**
-   * Check authentication status and fetch user info if authenticated
-   */
-  const checkAuth = () => {
-    const token = Cookies.get('access_token');
-    setIsAuthenticated(!!token);
-    if (token) {
-      fetchUserInfo();
-    } else {
-      setUserEmail(null);
-    }
-  };
 
   /**
    * Handle user logout
    */
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      const token = Cookies.get('access_token');
+      const { getApiUrl } = await import('@/constant/apiendpoints');
+      await fetch(getApiUrl('/api/logout/'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Logout request failed:', error);
+    }
+
     Cookies.remove('access_token');
     Cookies.remove('refresh_token');
-    setIsAuthenticated(false);
-    setUserEmail(null);
     window.dispatchEvent(new Event('auth-changed'));
     router.push('/');
   };
-
-  // ============ Hooks ============
-  useEffect(() => {
-    checkAuth();
-    window.addEventListener('auth-changed', checkAuth);
-    return () => window.removeEventListener('auth-changed', checkAuth);
-  }, []);
 
   // Hide navbar on admin routes - check AFTER hooks
   if (pathname.startsWith('/admin')) {
@@ -131,17 +98,17 @@ export default function Navbar() {
                 href="/profile"
                 className="flex items-center gap-2 text-gray-600 text-sm hover:underline transition-colors"
               >
-                {userAvatar && (
+                {user?.avatar && (
                   <img
-                    src={userAvatar}
+                    src={user.avatar}
                     alt="User avatar"
                     className="w-6 h-6 rounded-full object-cover"
                   />
                 )}
-                <span>{userEmail}</span>
+                <span>{user?.email}</span>
               </Link>
               <button
-                onClick={handleLogout}
+                onClick={() => void handleLogout()}
                 className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors"
               >
                 Logout
@@ -195,18 +162,18 @@ export default function Navbar() {
                 className="py-2 text-gray-600 text-sm flex items-center gap-2 hover:text-gray-900 transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                {userAvatar && (
+                {user?.avatar && (
                   <img
-                    src={userAvatar}
+                    src={user.avatar}
                     alt="User avatar"
                     className="w-6 h-6 rounded-full object-cover"
                   />
                 )}
-                <span>{userEmail}</span>
+                <span>{user?.email}</span>
               </Link>
               <button
                 onClick={() => {
-                  handleLogout();
+                  void handleLogout();
                   setIsMenuOpen(false);
                 }}
                 className="w-full text-left py-2 text-red-600 hover:text-red-800 transition-colors"

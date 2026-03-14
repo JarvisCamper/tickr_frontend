@@ -26,7 +26,8 @@ interface AdminUser {
 interface AdminTeam {
   id: number;
   name: string;
-  owner?: { username?: string; email?: string };
+  owner_username?: string;
+  owner_email?: string;
   members_count?: number;
   created_at?: string;
 }
@@ -35,7 +36,8 @@ interface AdminProject {
   id: number;
   name: string;
   type?: string;
-  creator?: { username?: string; email?: string };
+  creator_username?: string;
+  creator_email?: string;
   created_at?: string;
 }
 
@@ -43,8 +45,9 @@ interface AdminLog {
   id: number;
   action: string;
   description?: string;
-  timestamp?: string;
-  user?: { username?: string; email?: string };
+  created_at?: string;
+  admin_username?: string;
+  admin_email?: string;
 }
 
 type RowTab = "users" | "teams" | "projects" | "activity";
@@ -84,19 +87,13 @@ export default function AdminDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const [overviewRes, usersRes, teamsRes, projectsRes, logsRes] = await Promise.all([
-        safeFetch("/admin/api/analytics/overview/"),
-        safeFetch("/admin/api/users/"),
-        safeFetch("/admin/api/teams/"),
-        safeFetch("/admin/api/projects/"),
-        safeFetch("/admin/api/activity-logs/"),
-      ]);
+      const payload = await safeFetch("/admin/api/analytics/dashboard/");
 
-      setOverview((overviewRes as OverviewData) || {});
-      setUsers(firstList<AdminUser>(usersRes));
-      setTeams(firstList<AdminTeam>(teamsRes));
-      setProjects(firstList<AdminProject>(projectsRes));
-      setLogs(firstList<AdminLog>(logsRes));
+      setOverview((((payload as any) || {}).overview as OverviewData) || {});
+      setUsers(firstList<AdminUser>((payload as any)?.users));
+      setTeams(firstList<AdminTeam>((payload as any)?.teams));
+      setProjects(firstList<AdminProject>((payload as any)?.projects));
+      setLogs(firstList<AdminLog>((payload as any)?.activity_logs));
     } finally {
       setLoading(false);
     }
@@ -125,7 +122,7 @@ export default function AdminDashboard() {
       return teams.slice(0, 8).map((team) => ({
         id: `team-${team.id}`,
         name: team.name,
-        meta: team.owner?.username || team.owner?.email || "No owner",
+        meta: team.owner_username || team.owner_email || "No owner",
         type: `${team.members_count || 0} members`,
         status: "Team",
         date: formatDate(team.created_at),
@@ -137,7 +134,7 @@ export default function AdminDashboard() {
       return projects.slice(0, 8).map((project) => ({
         id: `project-${project.id}`,
         name: project.name,
-        meta: project.creator?.username || project.creator?.email || "Unknown",
+        meta: project.creator_username || project.creator_email || "Unknown",
         type: project.type || "general",
         status: "Project",
         date: formatDate(project.created_at),
@@ -147,11 +144,11 @@ export default function AdminDashboard() {
 
     return logs.slice(0, 8).map((log) => ({
       id: `log-${log.id}`,
-      name: log.user?.username || log.user?.email || "System",
+      name: log.admin_username || log.admin_email || "System",
       meta: log.description || "-",
       type: log.action || "event",
       status: "Logged",
-      date: formatDate(log.timestamp),
+      date: formatDate(log.created_at),
       href: "/admin/activity-logs",
     }));
   }, [activeTab, users, teams, projects, logs]);
