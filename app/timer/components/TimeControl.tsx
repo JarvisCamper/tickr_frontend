@@ -13,11 +13,12 @@ interface TimerControlProps {
   isRunning: boolean;
   isPaused: boolean;
   isActionPending: boolean;
+  screenshotStatus: "idle" | "requesting" | "active" | "ended" | "unsupported";
+  lastScreenshotLabel: string | null;
   onStart: () => void;
-  onPause: () => void;
-  onResume: () => void;
   onStop: () => void;
   onAddProject: () => void;
+  onEnableScreenshots: () => void;
 }
 
 export function TimeControl({
@@ -31,12 +32,21 @@ export function TimeControl({
   isRunning,
   isPaused,
   isActionPending,
+  screenshotStatus,
+  lastScreenshotLabel,
   onStart,
-  onPause: _onPause,
-  onResume: _onResume,
   onStop,
   onAddProject,
+  onEnableScreenshots,
 }: TimerControlProps) {
+  const screenshotStatusLabel = {
+    idle: "Screen capture inactive",
+    requesting: "Waiting for screen permission",
+    active: "Screenshots active",
+    ended: "Screen share stopped",
+    unsupported: "Browser capture unavailable",
+  }[screenshotStatus];
+
   return (
     <section className="surface-card rounded-[1.75rem] p-6 sm:p-8">
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -112,6 +122,25 @@ export function TimeControl({
         <span className="stat-pill">{isRunning ? 'Timer running' : 'Ready to start'}</span>
         <span className="stat-pill">{projects.length} available projects</span>
         <span className="stat-pill">{isPaused ? 'Paused locally' : 'Synced live'}</span>
+        <span className="stat-pill">{screenshotStatusLabel}</span>
+      </div>
+
+      <div className="mt-5 rounded-[1.4rem] border border-amber-200 bg-amber-50/80 px-4 py-4 text-sm text-slate-700">
+        <p className="font-semibold text-slate-900">Monitoring notice</p>
+        <p className="mt-1">
+          Starting a tracked session will request screen sharing, take one screenshot immediately, and continue every 10 minutes while the timer is running.
+        </p>
+        {lastScreenshotLabel ? (
+          <p className="mt-2 text-xs font-medium text-slate-500">Last screenshot: {lastScreenshotLabel}</p>
+        ) : null}
+        {isRunning && screenshotStatus !== "active" ? (
+          <button
+            onClick={onEnableScreenshots}
+            className="mt-3 inline-flex rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Enable screenshots
+          </button>
+        ) : null}
       </div>
     </section>
   );

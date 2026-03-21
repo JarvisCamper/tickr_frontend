@@ -232,7 +232,7 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         <Link
           href="/admin/users"
           className="admin-panel rounded-[1.7rem] p-6 hover:border-cyan-200 transition-colors"
@@ -248,6 +248,14 @@ export default function AdminDashboard() {
           <p className="text-sm text-gray-500">Analyze</p>
           <h3 className="text-lg font-semibold text-gray-900 mt-1">Analytics</h3>
           <p className="text-sm text-gray-600 mt-2">Review growth and platform activity.</p>
+        </Link>
+        <Link
+          href="/admin/screenshots"
+          className="admin-panel rounded-[1.7rem] p-6 hover:border-cyan-200 transition-colors"
+        >
+          <p className="text-sm text-gray-500">Review</p>
+          <h3 className="text-lg font-semibold text-gray-900 mt-1">Screenshots</h3>
+          <p className="text-sm text-gray-600 mt-2">Inspect captured work-session screenshots by user and project.</p>
         </Link>
         <Link
           href="/admin/time-entries"
