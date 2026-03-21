@@ -154,12 +154,15 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
+      <section className="admin-hero rounded-[1.85rem] px-6 py-7">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">Admin directory</p>
           <h1 className="text-3xl font-bold text-gray-900">Users</h1>
           <p className="text-gray-600 mt-2">Edit user roles, activation status, and access.</p>
         </div>
       </div>
+      </section>
 
       {error ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -167,20 +170,20 @@ export default function UsersPage() {
         </div>
       ) : null}
 
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+      <div className="admin-table p-6">
         <div className="mb-6">
           <input
             type="text"
             placeholder="Search users by name or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-2xl outline-none focus:border-cyan-500"
+            className="admin-input"
           />
         </div>
 
         <div className="overflow-x-auto">
           <table className="min-w-[900px] w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">User</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Status</th>
@@ -191,7 +194,7 @@ export default function UsersPage() {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={user.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="font-medium text-gray-900">{user.username || user.email}</div>
                     <div className="text-sm text-gray-500">{user.email}</div>
@@ -234,8 +237,8 @@ export default function UsersPage() {
       </div>
 
       {editingUser ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
-          <div className="w-full max-w-xl rounded-3xl bg-white p-6 shadow-xl">
+        <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="admin-panel w-full max-w-xl rounded-3xl p-6 shadow-xl">
             <h2 className="text-xl font-semibold text-slate-950">Edit User</h2>
             <p className="mt-1 text-sm text-slate-500">{editingUser.email}</p>
             <div className="mt-5 space-y-4">
@@ -244,14 +247,14 @@ export default function UsersPage() {
                 placeholder="Email"
                 value={form.email}
                 onChange={(e) => setForm((current) => ({ ...current, email: e.target.value }))}
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                className="admin-input"
               />
               <input
                 type="text"
                 placeholder="Username"
                 value={form.username}
                 onChange={(e) => setForm((current) => ({ ...current, username: e.target.value }))}
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                className="admin-input"
               />
               <div className="grid gap-3 sm:grid-cols-3">
                 <label className="rounded-2xl border border-slate-200 p-4 text-sm text-slate-700 flex items-center justify-between">

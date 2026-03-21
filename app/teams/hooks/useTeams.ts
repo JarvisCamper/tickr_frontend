@@ -29,6 +29,34 @@ const checkAuth = () => {
   return true;
 };
 
+const parseErrorResponse = async (response: Response) => {
+  const rawBody = await response.text();
+
+  if (!rawBody) {
+    return {
+      detail: "",
+      payload: null as unknown,
+    };
+  }
+
+  try {
+    const payload = JSON.parse(rawBody);
+    return {
+      detail:
+        payload?.detail ||
+        payload?.message ||
+        payload?.error ||
+        "",
+      payload,
+    };
+  } catch {
+    return {
+      detail: rawBody,
+      payload: rawBody,
+    };
+  }
+};
+
 // Helper function to normalize project data structure
 const normalizeProject = (project: any): Project => {
   return {
@@ -157,6 +185,30 @@ export function useTeams() {
       return processedTeam;
     } catch (error) {
       console.error("Error creating team:", error);
+      throw error;
+    }
+  };
+
+  const updateTeam = async (teamId: number, name: string, description: string) => {
+    try {
+      checkAuth();
+
+      const response = await fetch(getApiUrl(`/api/teams/${teamId}/`), {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ name, description }),
+      });
+
+      if (!response.ok) {
+        const { detail } = await parseErrorResponse(response);
+        throw new Error(detail || "Failed to update team");
+      }
+
+      const updatedTeam = ensureOwnerInMembers(await response.json());
+      setTeams((prevTeams) => prevTeams.map((team) => (team.id === teamId ? updatedTeam : team)));
+      return updatedTeam;
+    } catch (error) {
+      console.error("Error updating team:", error);
       throw error;
     }
   };
@@ -308,9 +360,16 @@ export function useTeams() {
       console.log("🔵 Response status:", response.status);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("❌ Assign project error:", errorData);
-        throw new Error(errorData.detail || "Failed to assign project");
+        const { detail, payload } = await parseErrorResponse(response);
+        console.error("❌ Assign project error:", {
+          status: response.status,
+          statusText: response.statusText,
+          detail,
+          payload,
+        });
+        throw new Error(
+          detail || `Failed to assign project (${response.status})`
+        );
       }
 
       const responseData = await response.json();
@@ -372,6 +431,7 @@ export function useTeams() {
     fetchProjects,
     fetchTeamMembers,
     createTeam,
+    updateTeam,
     deleteTeam,
     generateInviteLink,
     removeTeamMember,

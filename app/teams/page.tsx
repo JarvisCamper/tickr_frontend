@@ -1,11 +1,10 @@
 //app/teams/page.tsx
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "../../context-and-provider/AuthContext";
 import { useToast } from "../../context-and-provider";
 import { useTeams } from "./hooks/useTeams";
 import { Team } from "./index/type";
+import { useEmployeeRouteGuard } from "@/app/hooks/useEmployeeRouteGuard";
 
 // Components
 import { TeamCard } from "./components/TeamCard";
@@ -17,8 +16,7 @@ import { ViewProjectsModal } from "./components/ViewProjectsModel";
 import { AssignProjectModal } from "./components/AssignProjectModel";
 
 export default function TeamsPage() {
-  const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
+  const { isLoading: authLoading, isEmployeeAllowed, user } = useEmployeeRouteGuard();
   const { showToast } = useToast();
   
   console.log("TeamsPage - Current user:", user);
@@ -32,6 +30,7 @@ export default function TeamsPage() {
     fetchProjects,
     fetchTeamMembers,
     createTeam,
+    updateTeam,
     deleteTeam,
     generateInviteLink,
     assignProject,
@@ -41,6 +40,7 @@ export default function TeamsPage() {
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showInviteOptionsModal, setShowInviteOptionsModal] = useState(false);
   const [showInviteLinkModal, setShowInviteLinkModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
@@ -52,17 +52,11 @@ export default function TeamsPage() {
   const [invitationLink, setInvitationLink] = useState("");
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push("/login");
-    }
-  }, [isAuthenticated, authLoading, router]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
+    if (isEmployeeAllowed) {
       // Fetch teams and projects in parallel for faster loading
       Promise.all([fetchTeams(), fetchProjects()]);
     }
-  }, [isAuthenticated, fetchTeams, fetchProjects]);
+  }, [isEmployeeAllowed, fetchTeams, fetchProjects]);
 
   const handleCreateTeam = async (name: string, description: string): Promise<boolean> => {
     try {
@@ -76,12 +70,26 @@ export default function TeamsPage() {
     }
   };
 
+  const handleUpdateTeam = async (name: string, description: string): Promise<boolean> => {
+    if (!selectedTeam) return false;
+
+    try {
+      await updateTeam(selectedTeam.id, name, description);
+      showToast("Team updated successfully!", "success");
+      await fetchTeams();
+      return true;
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Failed to update team", "error");
+      return false;
+    }
+  };
+
   const handleDeleteTeam = async (teamId: number) => {
     if (confirm("Are you sure you want to delete this team?")) {
       try {
         await deleteTeam(teamId);
         showToast("Team deleted successfully", "success");
-      } catch (error) {
+      } catch {
         showToast("Failed to delete team", "error");
       }
     }
@@ -112,7 +120,7 @@ export default function TeamsPage() {
         setInvitationLink(link);
         setShowInviteLinkModal(true);
       }
-    } catch (error) {
+    } catch {
       showToast("Failed to generate invite link", "error");
     }
   };
@@ -120,6 +128,11 @@ export default function TeamsPage() {
   const handleAssignProject = (team: Team) => {
     setSelectedTeam(team);
     setShowAssignModal(true);
+  };
+
+  const handleEditTeam = (team: Team) => {
+    setSelectedTeam(team);
+    setShowEditModal(true);
   };
 
   // Wrapper for assignProject with better error handling
@@ -149,7 +162,7 @@ export default function TeamsPage() {
       await unassignProject(teamId, projectId);
       showToast("Project unassigned successfully!", "success");
       await fetchProjects();
-    } catch (error) {
+    } catch {
       showToast("Failed to unassign project", "error");
     }
   };
@@ -159,7 +172,7 @@ export default function TeamsPage() {
       await removeTeamMember(teamId, userId);
       await fetchTeamMembers(teamId);
       showToast("Member removed successfully", "success");
-    } catch (error) {
+    } catch {
       showToast("Failed to remove member", "error");
     }
   };
@@ -183,31 +196,49 @@ export default function TeamsPage() {
     );
   }
 
-  if (!isAuthenticated) return null;
+  if (!isEmployeeAllowed) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Teams</h1>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition-colors"
-          >
-            + Create Team
-          </button>
-        </div>
+    <div className="employee-page">
+      <div className="app-shell">
+        <section className="employee-hero rounded-4xl px-6 py-8 sm:px-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.26em] text-slate-500">Team collaboration</p>
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950">Teams</h1>
+              <p className="mt-3 text-base text-slate-600">
+                Create focused teams, assign projects cleanly, and manage members from one workspace.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <div className="surface-card rounded-[1.4rem] px-5 py-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Total teams</div>
+                <div className="mt-2 text-lg font-semibold text-slate-900">{teams.length}</div>
+              </div>
+              <div className="surface-card rounded-[1.4rem] px-5 py-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Assigned projects</div>
+                <div className="mt-2 text-lg font-semibold text-slate-900">{projects.filter((project) => project.team_id).length}</div>
+              </div>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="rounded-[1.4rem] bg-slate-950 px-6 py-4 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                Create team
+              </button>
+            </div>
+          </div>
+        </section>
 
         {/* Teams Grid */}
+        <div className="mt-8">
         {isLoading && teams.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">Loading teams...</div>
+          <div className="surface-card rounded-[1.75rem] px-6 py-16 text-center text-slate-500">Loading teams...</div>
         ) : teams.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-gray-500 mb-4">No teams yet</div>
+          <div className="empty-panel rounded-[1.75rem] px-6 py-16 text-center">
+            <div className="mb-4 text-lg font-semibold text-slate-900">No teams yet</div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="text-blue-500 hover:text-blue-600"
+              className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
               Create your first team
             </button>
@@ -224,18 +255,34 @@ export default function TeamsPage() {
                 onViewProjects={handleViewProjects}
                 onInvite={handleInvite}
                 onAssignProject={handleAssignProject}
+                onEdit={handleEditTeam}
                 onDelete={handleDeleteTeam}
               />
             ))}
           </div>
         )}
+        </div>
 
         {/* Modals */}
         <CreateTeamModal
+          key="create-team"
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           onCreate={handleCreateTeam}
           isLoading={isLoading}
+        />
+
+        <CreateTeamModal
+          key={`edit-team-${selectedTeam?.id || "none"}`}
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onCreate={handleUpdateTeam}
+          isLoading={isLoading}
+          title={`Edit ${selectedTeam?.name || "team"}`}
+          descriptionText="Update the team name and description. Only the team owner can save these changes."
+          submitLabel="Save Changes"
+          initialName={selectedTeam?.name || ""}
+          initialDescription={selectedTeam?.description || ""}
         />
 
         <InviteOptionsModal

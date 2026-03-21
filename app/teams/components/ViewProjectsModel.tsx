@@ -29,11 +29,11 @@ export function ViewProjectsModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-[500px] max-h-[80vh] overflow-y-auto">
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="surface-card-strong max-h-[80vh] w-full max-w-xl overflow-y-auto rounded-[1.6rem] p-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-900">{team.name} - Projects</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <h2 className="text-xl font-bold text-slate-950">{team.name} - Projects</h2>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-700">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -46,7 +46,7 @@ export function ViewProjectsModal({
         </div>
 
         {teamProjects.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="py-8 text-center text-slate-500">
             No projects assigned to this team yet
           </div>
         ) : (
@@ -54,18 +54,18 @@ export function ViewProjectsModal({
             {teamProjects.map((project) => (
               <div
                 key={project.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-md"
+                className="flex items-center justify-between rounded-2xl bg-slate-50 p-4"
               >
                 <div className="flex-1">
-                  <div className="font-medium text-gray-900">{project.name}</div>
+                  <div className="font-medium text-slate-900">{project.name}</div>
                   {project.description && (
-                    <div className="text-sm text-gray-500 mt-1">{project.description}</div>
+                    <div className="mt-1 text-sm text-slate-500">{project.description}</div>
                   )}
                 </div>
                 {team && team.owner && currentUserId === team.owner.id ? (
                   <button
                     onClick={() => handleUnassign(project.id)}
-                    className="ml-4 text-red-500 hover:text-red-700 text-sm"
+                    className="ml-4 rounded-full border border-rose-200 px-3 py-1.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-50"
                     title="Unassign project"
                   >
                     Unassign
@@ -78,7 +78,7 @@ export function ViewProjectsModal({
 
         <button
           onClick={onClose}
-          className="w-full mt-4 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors"
+          className="mt-4 w-full rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
         >
           Close
         </button>

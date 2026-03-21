@@ -206,18 +206,21 @@ export default function ProjectsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <section className="admin-hero rounded-[1.85rem] px-6 py-7">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">Admin catalog</p>
+          <h1 className="mt-2 text-3xl font-bold text-gray-900">Projects</h1>
           <p className="text-gray-600 mt-2">Create, update, and remove projects across the workspace.</p>
         </div>
         <button
           onClick={openCreate}
-          className="rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-semibold text-white hover:bg-cyan-700"
+          className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
         >
           Create Project
         </button>
       </div>
+      </section>
 
       {error && (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
@@ -225,19 +228,19 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+      <div className="admin-table p-6">
         <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_220px]">
           <input
             type="text"
             placeholder="Search projects by name, creator, or team..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="px-4 py-3 border border-gray-300 rounded-2xl outline-none focus:border-cyan-500"
+            className="admin-input"
           />
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="px-4 py-3 border border-gray-300 rounded-2xl outline-none focus:border-cyan-500"
+            className="admin-select"
           >
             <option value="">All Types</option>
             <option value="individual">Individual</option>
@@ -247,7 +250,7 @@ export default function ProjectsPage() {
 
         <div className="overflow-x-auto">
           <table className="min-w-[1100px] w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Name</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Description</th>
@@ -261,7 +264,7 @@ export default function ProjectsPage() {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredProjects.map((project) => (
-                <tr key={project.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={project.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4">
                     <span className="font-medium text-gray-900">{project.name}</span>
                   </td>
@@ -320,8 +323,8 @@ export default function ProjectsPage() {
       </div>
 
       {showModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
-          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-xl">
+        <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="admin-panel w-full max-w-2xl rounded-3xl p-6 shadow-xl">
             <h2 className="text-xl font-semibold text-slate-950">
               {editingProject ? "Edit Project" : "Create Project"}
             </h2>
@@ -337,20 +340,20 @@ export default function ProjectsPage() {
                 placeholder="Project name"
                 value={form.name}
                 onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))}
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                className="admin-input"
               />
               <textarea
                 placeholder="Description"
                 value={form.description}
                 onChange={(e) => setForm((current) => ({ ...current, description: e.target.value }))}
                 rows={4}
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                className="admin-textarea"
               />
               <div className="grid gap-4 md:grid-cols-3">
                 <select
                   value={form.type}
                   onChange={(e) => setForm((current) => ({ ...current, type: e.target.value }))}
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                  className="admin-select"
                 >
                   <option value="individual">Individual</option>
                   <option value="group">Group</option>
@@ -360,7 +363,7 @@ export default function ProjectsPage() {
                   onChange={(e) =>
                     setForm((current) => ({ ...current, creator_id: e.target.value }))
                   }
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                  className="admin-select"
                 >
                   <option value="">Select creator</option>
                   {users.map((user) => (
@@ -372,7 +375,7 @@ export default function ProjectsPage() {
                 <select
                   value={form.team_id}
                   onChange={(e) => setForm((current) => ({ ...current, team_id: e.target.value }))}
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                  className="admin-select"
                 >
                   <option value="">No team</option>
                   {teams.map((team) => (

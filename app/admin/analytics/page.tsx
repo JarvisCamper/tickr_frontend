@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   ChartColumn,
@@ -67,28 +67,12 @@ const formatShortDate = (value: string) => {
   return parsed.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 };
 
-function MiniBars({
-  data,
-  colorClass,
-}: {
-  data: number[];
-  colorClass: string;
-}) {
-  const maxValue = Math.max(...data, 1);
+const isAdminIdentity = (username?: string | null, email?: string | null) => {
+  const normalizedUsername = (username || "").trim().toLowerCase();
+  const normalizedEmail = (email || "").trim().toLowerCase();
 
-  return (
-    <div className="flex items-end gap-2 h-28">
-      {data.map((value, index) => (
-        <div key={index} className="flex-1 min-w-0">
-          <div
-            className={`w-full rounded-t-xl ${colorClass}`}
-            style={{ height: `${Math.max((value / maxValue) * 100, value > 0 ? 8 : 4)}%` }}
-          />
-        </div>
-      ))}
-    </div>
-  );
-}
+  return normalizedUsername === "admin" || normalizedEmail === "admin@tickr.com";
+};
 
 export default function AnalyticsPage() {
   const [overview, setOverview] = useState<OverviewData | null>(null);
@@ -101,35 +85,82 @@ export default function AnalyticsPage() {
   const [error, setError] = useState("");
   const [days, setDays] = useState(14);
 
-  const initRef = useRef(false);
+  const applyAnalyticsPayload = (payload: any) => {
+    const rawOverview = ((payload || {}).overview as OverviewData) || null;
+    const rawGrowth = Array.isArray(payload?.user_growth) ? (payload.user_growth as UserGrowthPoint[]) : [];
+    const rawTopUsers = Array.isArray(payload?.top_users) ? (payload.top_users as TopUser[]) : [];
+    const hasAdminAccount = (rawOverview?.total_users || 0) > 0;
 
-  useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
-    fetchAnalytics(14);
-  }, []);
+    setOverview(
+      rawOverview
+        ? {
+            ...rawOverview,
+            total_users: Math.max(0, rawOverview.total_users - (hasAdminAccount ? 1 : 0)),
+          }
+        : null
+    );
+    setUserGrowth(
+      rawGrowth.map((point) => ({
+        ...point,
+        count: Math.max(0, point.count),
+        cumulative: Math.max(0, point.cumulative - (hasAdminAccount ? 1 : 0)),
+      }))
+    );
+    setActivity(Array.isArray(payload?.activity) ? (payload.activity as ActivityPoint[]) : []);
+    setTopUsers(rawTopUsers.filter((user) => !isAdminIdentity(user.username, user.email)));
+    setTopProjects(Array.isArray(payload?.top_projects) ? (payload.top_projects as TopProject[]) : []);
+    setTopTeams(Array.isArray(payload?.top_teams) ? (payload.top_teams as TopTeam[]) : []);
+  };
 
-  const fetchAnalytics = async (selectedDays: number) => {
+  async function fetchAnalytics(selectedDays: number) {
     setLoading(true);
     setError("");
     setDays(selectedDays);
 
-    const payload = await safeFetch(`/admin/api/analytics/bundle/?days=${selectedDays}&limit=6`);
+    const payload = await safeFetch(`/admin/api/analytics/bundle/?days=${selectedDays}&limit=6`, {
+      timeoutMs: 20000,
+    });
 
     if (!payload) {
-      setError("Failed to load analytics.");
+      setError(overview ? "Analytics refresh timed out. Showing the last loaded data." : "Failed to load analytics.");
       setLoading(false);
       return;
     }
 
-    setOverview((((payload as any) || {}).overview as OverviewData) || null);
-    setUserGrowth(Array.isArray((payload as any)?.user_growth) ? ((payload as any).user_growth as UserGrowthPoint[]) : []);
-    setActivity(Array.isArray((payload as any)?.activity) ? ((payload as any).activity as ActivityPoint[]) : []);
-    setTopUsers(Array.isArray((payload as any)?.top_users) ? ((payload as any).top_users as TopUser[]) : []);
-    setTopProjects(Array.isArray((payload as any)?.top_projects) ? ((payload as any).top_projects as TopProject[]) : []);
-    setTopTeams(Array.isArray((payload as any)?.top_teams) ? ((payload as any).top_teams as TopTeam[]) : []);
+    applyAnalyticsPayload(payload);
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadInitialAnalytics = async () => {
+      setLoading(true);
+      setError("");
+      setDays(14);
+
+      const payload = await safeFetch("/admin/api/analytics/bundle/?days=14&limit=6", {
+        timeoutMs: 20000,
+      });
+
+      if (cancelled) return;
+
+      if (!payload) {
+        setError("Failed to load analytics.");
+        setLoading(false);
+        return;
+      }
+
+      applyAnalyticsPayload(payload);
+      setLoading(false);
+    };
+
+    void loadInitialAnalytics();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const growthSummary = useMemo(() => {
     if (!userGrowth.length) {
@@ -163,6 +194,30 @@ export default function AnalyticsPage() {
     return { ...totals, peakDay };
   }, [activity]);
 
+  const activityHighlights = useMemo(() => {
+    const activeDays = activity
+      .map((point) => ({
+        ...point,
+        total: point.time_entries + point.new_projects + point.active_users,
+      }))
+      .filter((point) => point.total > 0);
+
+    const busiestDays = [...activeDays]
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+
+    const activeDayCount = activeDays.length;
+    const averageEvents = activeDayCount
+      ? Math.round(activeDays.reduce((sum, point) => sum + point.total, 0) / activeDayCount)
+      : 0;
+
+    return {
+      busiestDays,
+      activeDayCount,
+      averageEvents,
+    };
+  }, [activity]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -173,7 +228,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[28px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,#ecfeff_0%,#f8fafc_45%,#ffffff_100%)] px-6 py-7 shadow-sm">
+      <section className="admin-hero rounded-[1.85rem] px-6 py-7">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">Insights Console</p>
@@ -239,7 +294,7 @@ export default function AnalyticsPage() {
       ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[1.25fr_0.95fr]">
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="admin-panel rounded-3xl p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-950">Growth Snapshot</h2>
@@ -247,50 +302,37 @@ export default function AnalyticsPage() {
                 User signups and cumulative platform growth over the selected period.
               </p>
             </div>
-            <div className="rounded-2xl bg-cyan-50 px-4 py-3 text-right">
+            <div className="rounded-2xl border border-cyan-100 bg-cyan-50 px-4 py-3 text-right">
               <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">Current Users</p>
               <p className="mt-1 text-2xl font-bold text-slate-950">{growthSummary.latestCumulative}</p>
             </div>
           </div>
 
-          <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_240px]">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <MiniBars
-                data={userGrowth.map((point) => point.cumulative)}
-                colorClass="bg-gradient-to-t from-cyan-600 to-sky-300"
-              />
-              <div className="mt-4 flex justify-between gap-2 overflow-hidden text-xs text-slate-500">
-                {userGrowth.map((point) => (
-                  <span key={point.date} className="min-w-0 truncate">
-                    {formatShortDate(point.date)}
-                  </span>
-                ))}
-              </div>
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200 bg-white/70 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">New users in window</p>
+              <p className="mt-2 text-3xl font-semibold text-slate-950">{growthSummary.recentGrowth}</p>
+              <p className="mt-2 text-sm text-slate-500">Excludes the admin account from platform totals.</p>
             </div>
-
-            <div className="space-y-3">
-              <div className="rounded-2xl border border-slate-200 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">New users in window</p>
-                <p className="mt-2 text-3xl font-semibold text-slate-950">{growthSummary.recentGrowth}</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tracked work time</p>
-                <p className="mt-2 text-2xl font-semibold text-slate-950">
-                  {overview?.total_time_tracked || "0:00:00"}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Weekly momentum</p>
-                <p className="mt-2 flex items-center gap-2 text-lg font-semibold text-emerald-700">
-                  <TrendingUp size={18} />
-                  {overview?.new_users_this_week || 0} new accounts
-                </p>
-              </div>
+            <div className="rounded-2xl border border-slate-200 bg-white/70 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tracked work time</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-950">
+                {overview?.total_time_tracked || "0:00:00"}
+              </p>
+              <p className="mt-2 text-sm text-slate-500">All recorded work tracked during the selected period.</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white/70 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Weekly momentum</p>
+              <p className="mt-2 flex items-center gap-2 text-lg font-semibold text-emerald-700">
+                <TrendingUp size={18} />
+                {overview?.new_users_this_week || 0} new accounts
+              </p>
+              <p className="mt-2 text-sm text-slate-500">Fresh signups recorded in the current weekly window.</p>
             </div>
           </div>
         </section>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="admin-panel rounded-3xl p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-950">Operational Pulse</h2>
@@ -298,7 +340,7 @@ export default function AnalyticsPage() {
                 Activity mix across time tracking, active users, and new project creation.
               </p>
             </div>
-            <div className="rounded-2xl bg-emerald-50 p-3">
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3">
               <ChartColumn size={22} className="text-emerald-700" />
             </div>
           </div>
@@ -318,45 +360,92 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          <div className="mt-6 space-y-3">
-            {activity.map((point) => {
-              const total = point.time_entries + point.new_projects + point.active_users;
-              const safeTotal = Math.max(total, 1);
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200 bg-white/70 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Busiest Day</p>
+              <p className="mt-2 text-xl font-semibold text-slate-950">
+                {activitySummary.peakDay ? formatShortDate(activitySummary.peakDay.date) : "No data"}
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                {activitySummary.peakDay
+                  ? `${activitySummary.peakDay.time_entries + activitySummary.peakDay.active_users + activitySummary.peakDay.new_projects} total events`
+                  : "No recorded activity in this window."}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white/70 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Active Days</p>
+              <p className="mt-2 text-xl font-semibold text-slate-950">{activityHighlights.activeDayCount}</p>
+              <p className="mt-2 text-sm text-slate-500">Days with at least one tracked event in the selected range.</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white/70 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Avg Events / Active Day</p>
+              <p className="mt-2 text-xl font-semibold text-slate-950">{activityHighlights.averageEvents}</p>
+              <p className="mt-2 text-sm text-slate-500">A steadier signal than scanning every individual date.</p>
+            </div>
+          </div>
 
-              return (
-                <div key={point.date} className="rounded-2xl border border-slate-200 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="font-medium text-slate-900">{formatShortDate(point.date)}</p>
-                      <p className="text-xs text-slate-500 mt-1">
-                        {point.time_entries} entries, {point.active_users} active users, {point.new_projects} new projects
-                      </p>
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-white/70 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Top activity days</p>
+                <p className="mt-1 text-xs text-slate-500">Showing the strongest days only, so this stays compact in production.</p>
+              </div>
+              <span className="text-xs font-medium text-slate-500">Top 5</span>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {activityHighlights.busiestDays.length ? (
+                activityHighlights.busiestDays.map((point, index) => {
+                  const maxTotal = Math.max(activityHighlights.busiestDays[0]?.total || 1, 1);
+                  const safeTotal = Math.max(point.total, 1);
+
+                  return (
+                    <div key={point.date} className="rounded-2xl bg-slate-50/90 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
+                            {index + 1}
+                          </span>
+                          <div>
+                            <p className="font-medium text-slate-900">{formatShortDate(point.date)}</p>
+                            <p className="text-xs text-slate-500">
+                              {point.time_entries} entries, {point.active_users} active users, {point.new_projects} new projects
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-sm font-semibold text-slate-700">{point.total} events</span>
+                      </div>
+
+                      <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-200">
+                        <div className="flex h-full" style={{ width: `${(point.total / maxTotal) * 100}%` }}>
+                          <div
+                            className="bg-cyan-500"
+                            style={{ width: `${(point.time_entries / safeTotal) * 100}%` }}
+                          />
+                          <div
+                            className="bg-emerald-500"
+                            style={{ width: `${(point.active_users / safeTotal) * 100}%` }}
+                          />
+                          <div
+                            className="bg-amber-400"
+                            style={{ width: `${(point.new_projects / safeTotal) * 100}%` }}
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-sm font-semibold text-slate-700">{total} total events</span>
-                  </div>
-
-                  <div className="mt-4 flex h-3 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="bg-cyan-500"
-                      style={{ width: `${(point.time_entries / safeTotal) * 100}%` }}
-                    />
-                    <div
-                      className="bg-emerald-500"
-                      style={{ width: `${(point.active_users / safeTotal) * 100}%` }}
-                    />
-                    <div
-                      className="bg-amber-400"
-                      style={{ width: `${(point.new_projects / safeTotal) * 100}%` }}
-                    />
-                  </div>
+                  );
+                })
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-5 text-sm text-slate-500">
+                  No activity has been recorded in the selected window yet.
                 </div>
-              );
-            })}
+              )}
+            </div>
           </div>
         </section>
       </div>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="admin-panel rounded-3xl p-6">
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-slate-950">Performance Highlights</h2>
@@ -367,7 +456,7 @@ export default function AnalyticsPage() {
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/90 p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Peak Activity Day</p>
             <p className="mt-2 text-xl font-semibold text-slate-950">
               {activitySummary.peakDay ? formatShortDate(activitySummary.peakDay.date) : "No data"}
@@ -379,7 +468,7 @@ export default function AnalyticsPage() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/90 p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current Platform Base</p>
             <p className="mt-2 text-xl font-semibold text-slate-950">{growthSummary.latestCumulative}</p>
             <p className="mt-2 text-sm text-slate-600">
@@ -387,7 +476,7 @@ export default function AnalyticsPage() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/90 p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Today’s Active Users</p>
             <p className="mt-2 text-xl font-semibold text-slate-950">{overview?.active_users_today || 0}</p>
             <p className="mt-2 text-sm text-slate-600">
@@ -398,7 +487,7 @@ export default function AnalyticsPage() {
       </section>
 
       <div className="grid gap-6 xl:grid-cols-3">
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="admin-panel rounded-3xl p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-950">Top Users</h2>
@@ -406,14 +495,14 @@ export default function AnalyticsPage() {
                 People contributing the most tracked work time.
               </p>
             </div>
-            <div className="rounded-2xl bg-cyan-50 p-3">
+            <div className="rounded-2xl border border-cyan-100 bg-cyan-50 p-3">
               <Users size={20} className="text-cyan-700" />
             </div>
           </div>
 
           <div className="mt-6 space-y-3">
             {topUsers.map((user, index) => (
-              <div key={user.user_id} className="rounded-2xl border border-slate-200 p-4">
+              <div key={user.user_id} className="rounded-2xl border border-slate-200 bg-white/70 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold text-slate-900">
@@ -431,7 +520,7 @@ export default function AnalyticsPage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="admin-panel rounded-3xl p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-950">Top Projects</h2>
@@ -439,14 +528,14 @@ export default function AnalyticsPage() {
                 Projects with the most recorded work time.
               </p>
             </div>
-            <div className="rounded-2xl bg-purple-50 p-3">
+            <div className="rounded-2xl border border-violet-100 bg-violet-50 p-3">
               <FolderKanban size={20} className="text-purple-700" />
             </div>
           </div>
 
           <div className="mt-6 space-y-3">
             {topProjects.map((project, index) => (
-              <div key={`${project.project_id}-${index}`} className="rounded-2xl border border-slate-200 p-4">
+              <div key={`${project.project_id}-${index}`} className="rounded-2xl border border-slate-200 bg-white/70 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold text-slate-900">
@@ -466,7 +555,7 @@ export default function AnalyticsPage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="admin-panel rounded-3xl p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-950">Top Teams</h2>
@@ -474,14 +563,14 @@ export default function AnalyticsPage() {
                 Teams with the largest footprint across members and projects.
               </p>
             </div>
-            <div className="rounded-2xl bg-amber-50 p-3">
+            <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3">
               <UsersRound size={20} className="text-amber-700" />
             </div>
           </div>
 
           <div className="mt-6 space-y-3">
             {topTeams.map((team, index) => (
-              <div key={team.team_id} className="rounded-2xl border border-slate-200 p-4">
+              <div key={team.team_id} className="rounded-2xl border border-slate-200 bg-white/70 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold text-slate-900">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Activity, Clock3, Search, Wallet } from "lucide-react";
 import { safeFetch } from "../utils/apiHelper";
 
@@ -41,7 +41,7 @@ const StatCard = ({
   icon: React.ReactNode;
   tone: string;
 }) => (
-  <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+  <div className="admin-panel rounded-3xl p-5">
     <div className="flex items-start justify-between gap-4">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
@@ -59,25 +59,17 @@ export default function AdminTimeEntriesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  const initRef = useRef(false);
-
-  useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
-    fetchEntries();
-  }, []);
-
-  const fetchEntries = async () => {
+  async function loadEntries(searchValue: string, statusValue: string) {
     setLoading(true);
     setError("");
 
     const params = new URLSearchParams();
-    if (searchTerm.trim()) params.set("search", searchTerm.trim());
-    if (statusFilter) params.set("status", statusFilter);
+    if (searchValue.trim()) params.set("search", searchValue.trim());
+    if (statusValue) params.set("status", statusValue);
 
     const query = params.toString();
     const endpoint = query ? `/admin/api/time-entries/?${query}` : "/admin/api/time-entries/";
-    const data = await safeFetch(endpoint);
+    const data = await safeFetch(endpoint, { timeoutMs: 8000 });
 
     if (data) {
       setEntries(Array.isArray(data) ? data : data.results || []);
@@ -87,7 +79,39 @@ export default function AdminTimeEntriesPage() {
     }
 
     setLoading(false);
-  };
+  }
+
+  async function fetchEntries() {
+    await loadEntries(searchTerm, statusFilter);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadInitialEntries = async () => {
+      setLoading(true);
+      setError("");
+
+      const data = await safeFetch("/admin/api/time-entries/", { timeoutMs: 8000 });
+
+      if (cancelled) return;
+
+      if (data) {
+        setEntries(Array.isArray(data) ? data : data.results || []);
+      } else {
+        setEntries([]);
+        setError("Failed to load time entries.");
+      }
+
+      setLoading(false);
+    };
+
+    void loadInitialEntries();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredEntries = useMemo(
     () =>
@@ -140,7 +164,7 @@ export default function AdminTimeEntriesPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[28px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,#ecfeff_0%,#f8fafc_48%,#ffffff_100%)] px-6 py-7 shadow-sm">
+      <section className="admin-hero rounded-[1.85rem] px-6 py-7">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">Workforce Monitoring</p>
@@ -191,7 +215,7 @@ export default function AdminTimeEntriesPage() {
         </div>
       ) : null}
 
-      <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <section className="admin-table">
         <div className="border-b border-slate-200 px-5 py-5">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px] xl:grid-cols-[minmax(0,1fr)_220px_180px]">
             <label className="relative block">
@@ -204,13 +228,13 @@ export default function AdminTimeEntriesPage() {
                 placeholder="Search by user, email, project, or description..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-2xl border border-slate-300 py-3 pl-11 pr-4 text-sm outline-none focus:border-cyan-500"
+                className="admin-input py-3 pl-11 pr-4 text-sm"
               />
             </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-cyan-500"
+              className="admin-select px-4 py-3 text-sm"
             >
               <option value="">All Statuses</option>
               <option value="running">Running</option>
@@ -232,7 +256,7 @@ export default function AdminTimeEntriesPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-[1120px] w-full">
-              <thead className="bg-slate-50">
+              <thead>
                 <tr className="border-b border-slate-200">
                   <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">User</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Project</th>

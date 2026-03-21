@@ -42,29 +42,29 @@ export function Button({
   ...props
 }: ButtonProps) {
   const baseStyles =
-    'rounded-md transition-colors font-medium inline-flex items-center justify-center gap-2';
+    'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200';
 
   const variants: Record<ButtonVariant, string> = {
-    primary: 'bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-400',
+    primary: 'bg-slate-950 text-white hover:bg-slate-800 disabled:bg-slate-300',
     secondary:
-      'bg-gray-300 text-gray-700 hover:bg-gray-400 disabled:bg-gray-200',
-    success: 'bg-green-500 text-white hover:bg-green-600 disabled:bg-gray-400',
-    danger: 'bg-red-500 text-white hover:bg-red-600 disabled:bg-gray-400',
-    ghost: 'bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:bg-gray-50',
+      'bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:bg-slate-100',
+    success: 'bg-teal-600 text-white hover:bg-teal-700 disabled:bg-teal-300',
+    danger: 'bg-rose-600 text-white hover:bg-rose-700 disabled:bg-rose-300',
+    ghost: 'bg-white text-slate-700 hover:bg-slate-50 disabled:bg-slate-50',
     outline:
-      'border-2 border-gray-300 text-gray-700 hover:bg-gray-50 disabled:border-gray-200',
+      'border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:border-slate-200',
     'purple-light':
-      'bg-purple-100 text-purple-700 hover:bg-purple-200 disabled:bg-gray-100',
+      'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 disabled:bg-slate-100',
     'blue-light':
-      'bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:bg-gray-100',
+      'bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:bg-slate-100',
     'green-light':
-      'bg-green-100 text-green-700 hover:bg-green-200 disabled:bg-gray-100',
+      'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:bg-slate-100',
   };
 
   const sizes: Record<ButtonSize, string> = {
-    sm: 'px-3 py-2 text-sm',
-    md: 'px-4 py-2 text-base',
-    lg: 'px-6 py-3 text-lg',
+    sm: 'px-3.5 py-2 text-sm',
+    md: 'px-4 py-2.5 text-sm',
+    lg: 'px-6 py-3 text-base',
   };
 
   const widthClass = fullWidth ? 'w-full' : '';

@@ -1,8 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f4f7fb;
+  --foreground: #122033;
+  --surface: rgba(255, 255, 255, 0.88);
+  --surface-strong: #ffffff;
+  --surface-muted: #e8eef7;
+  --border: rgba(148, 163, 184, 0.22);
+  --border-strong: rgba(71, 85, 105, 0.18);
+  --primary: #1d4ed8;
+  --primary-strong: #163ea6;
+  --accent: #0f766e;
+  --accent-soft: #d7f4ef;
+  --warning: #c2410c;
+  --danger: #be123c;
+  --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.08);
+  --shadow-card: 0 10px 30px rgba(15, 23, 42, 0.06);
+  --hero-gradient: radial-gradient(circle at top left, rgba(29, 78, 216, 0.16), transparent 34%),
+    radial-gradient(circle at top right, rgba(15, 118, 110, 0.14), transparent 30%),
+    linear-gradient(180deg, #f8fbff 0%, #f4f7fb 48%, #eef3f9 100%);
 }
 
 @theme inline {
@@ -14,18 +30,207 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #f4f7fb;
+    --foreground: #122033;
   }
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  background: var(--background);
+  background: var(--hero-gradient);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
 html, body, #__next {
-  background-color: white !important;
+  min-height: 100%;
   color: #111827;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.32), transparent 82%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.app-shell {
+  width: min(1180px, calc(100% - 2rem));
+  margin: 0 auto;
+}
+
+.employee-page {
+  min-height: 100vh;
+  padding: 2rem 0 3rem;
+}
+
+.employee-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(29, 78, 216, 0.18), transparent 28%),
+    radial-gradient(circle at 100% 20%, rgba(15, 118, 110, 0.18), transparent 26%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(243, 247, 252, 0.92));
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(20px);
+}
+
+.surface-card {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(18px);
+}
+
+.surface-card-strong {
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95));
+  box-shadow: var(--shadow-soft);
+}
+
+.section-title {
+  color: #0f172a;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.section-subtitle {
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+.pro-input,
+.pro-select,
+.pro-textarea {
+  width: 100%;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f172a;
+  padding: 0.9rem 1rem;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.pro-input:focus,
+.pro-select:focus,
+.pro-textarea:focus {
+  border-color: rgba(29, 78, 216, 0.52);
+  box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.12);
+  background: #ffffff;
+}
+
+.pro-input::placeholder,
+.pro-textarea::placeholder {
+  color: #94a3b8;
+}
+
+.modal-backdrop {
+  background: rgba(15, 23, 42, 0.52);
+  backdrop-filter: blur(10px);
+}
+
+.table-shell {
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-card);
+}
+
+.table-shell table thead {
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.94));
+}
+
+.stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0.45rem 0.85rem;
+  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.empty-panel {
+  border: 1px dashed rgba(148, 163, 184, 0.42);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(248, 250, 252, 0.92));
+}
+
+.admin-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(6, 182, 212, 0.12), transparent 24%),
+    radial-gradient(circle at top right, rgba(30, 64, 175, 0.1), transparent 22%),
+    linear-gradient(180deg, #f7fafc 0%, #eef4f8 46%, #e8eef5 100%);
+}
+
+.admin-sidebar {
+  border-right: 1px solid rgba(148, 163, 184, 0.22);
+  background: linear-gradient(180deg, rgba(10, 15, 30, 0.96), rgba(15, 23, 42, 0.98));
+  box-shadow: 24px 0 60px rgba(15, 23, 42, 0.14);
+}
+
+.admin-panel {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.07);
+  backdrop-filter: blur(18px);
+}
+
+.admin-hero {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background:
+    radial-gradient(circle at top left, rgba(34, 211, 238, 0.18), transparent 25%),
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.14), transparent 24%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(241, 245, 249, 0.94));
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(20px);
+}
+
+.admin-table {
+  overflow: hidden;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+}
+
+.admin-table table thead {
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.94));
+}
+
+.admin-input,
+.admin-select,
+.admin-textarea {
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(255, 255, 255, 0.96);
+  color: #0f172a;
+  padding: 0.9rem 1rem;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.admin-input:focus,
+.admin-select:focus,
+.admin-textarea:focus {
+  border-color: rgba(8, 145, 178, 0.46);
+  box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.12);
+  background: #ffffff;
 }

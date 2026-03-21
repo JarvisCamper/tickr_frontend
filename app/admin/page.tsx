@@ -41,22 +41,12 @@ interface AdminProject {
   created_at?: string;
 }
 
-interface AdminLog {
-  id: number;
-  action: string;
-  description?: string;
-  created_at?: string;
-  admin_username?: string;
-  admin_email?: string;
-}
-
-type RowTab = "users" | "teams" | "projects" | "activity";
+type RowTab = "users" | "teams" | "projects";
 
 const tabs: Array<{ key: RowTab; label: string }> = [
   { key: "users", label: "Recent Users" },
   { key: "teams", label: "Recent Teams" },
   { key: "projects", label: "Recent Projects" },
-  { key: "activity", label: "Recent Activity" },
 ];
 
 const formatDate = (value?: string) => {
@@ -79,7 +69,6 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [teams, setTeams] = useState<AdminTeam[]>([]);
   const [projects, setProjects] = useState<AdminProject[]>([]);
-  const [logs, setLogs] = useState<AdminLog[]>([]);
   const [activeTab, setActiveTab] = useState<RowTab>("users");
   const [loading, setLoading] = useState(true);
 
@@ -93,7 +82,6 @@ export default function AdminDashboard() {
       setUsers(firstList<AdminUser>((payload as any)?.users));
       setTeams(firstList<AdminTeam>((payload as any)?.teams));
       setProjects(firstList<AdminProject>((payload as any)?.projects));
-      setLogs(firstList<AdminLog>((payload as any)?.activity_logs));
     } finally {
       setLoading(false);
     }
@@ -142,16 +130,8 @@ export default function AdminDashboard() {
       }));
     }
 
-    return logs.slice(0, 8).map((log) => ({
-      id: `log-${log.id}`,
-      name: log.admin_username || log.admin_email || "System",
-      meta: log.description || "-",
-      type: log.action || "event",
-      status: "Logged",
-      date: formatDate(log.created_at),
-      href: "/admin/activity-logs",
-    }));
-  }, [activeTab, users, teams, projects, logs]);
+    return [];
+  }, [activeTab, users, teams, projects]);
 
   if (loading) {
     return (
@@ -192,7 +172,7 @@ export default function AdminDashboard() {
         />
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className="admin-table p-6">
         <div className="flex flex-wrap gap-3 mb-6">
           {tabs.map((tab) => (
             <button
@@ -201,7 +181,7 @@ export default function AdminDashboard() {
               className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                 activeTab === tab.key
                   ? "bg-cyan-50 text-cyan-700 border border-cyan-200"
-                  : "bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100"
+                  : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
               }`}
             >
               {tab.label}
@@ -211,7 +191,7 @@ export default function AdminDashboard() {
 
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-y border-gray-200">
+            <thead className="border-y border-gray-200">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Name</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Details</th>
@@ -223,7 +203,7 @@ export default function AdminDashboard() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {tableRows.map((row) => (
-                <tr key={row.id} className="hover:bg-gray-50">
+                <tr key={row.id} className="hover:bg-slate-50">
                   <td className="px-4 py-4 font-medium text-gray-900">{row.name}</td>
                   <td className="px-4 py-4 text-sm text-gray-600">{row.meta}</td>
                   <td className="px-4 py-4">
@@ -255,7 +235,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <Link
           href="/admin/users"
-          className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:border-cyan-200 transition-colors"
+          className="admin-panel rounded-[1.7rem] p-6 hover:border-cyan-200 transition-colors"
         >
           <p className="text-sm text-gray-500">Manage</p>
           <h3 className="text-lg font-semibold text-gray-900 mt-1">Users</h3>
@@ -263,19 +243,19 @@ export default function AdminDashboard() {
         </Link>
         <Link
           href="/admin/analytics"
-          className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:border-cyan-200 transition-colors"
+          className="admin-panel rounded-[1.7rem] p-6 hover:border-cyan-200 transition-colors"
         >
           <p className="text-sm text-gray-500">Analyze</p>
           <h3 className="text-lg font-semibold text-gray-900 mt-1">Analytics</h3>
           <p className="text-sm text-gray-600 mt-2">Review growth and platform activity.</p>
         </Link>
         <Link
-          href="/admin/activity-logs"
-          className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:border-cyan-200 transition-colors"
+          href="/admin/time-entries"
+          className="admin-panel rounded-[1.7rem] p-6 hover:border-cyan-200 transition-colors"
         >
-          <p className="text-sm text-gray-500">Audit</p>
-          <h3 className="text-lg font-semibold text-gray-900 mt-1">Activity Logs</h3>
-          <p className="text-sm text-gray-600 mt-2">Track changes and admin events.</p>
+          <p className="text-sm text-gray-500">Monitor</p>
+          <h3 className="text-lg font-semibold text-gray-900 mt-1">Time Entries</h3>
+          <p className="text-sm text-gray-600 mt-2">Review running timers and completed work logs.</p>
         </Link>
       </div>
     </div>

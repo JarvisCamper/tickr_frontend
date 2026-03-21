@@ -6,12 +6,27 @@ interface CreateTeamModalProps {
   onClose: () => void;
   onCreate: (name: string, description: string) => Promise<boolean>;
   isLoading: boolean;
+  title?: string;
+  descriptionText?: string;
+  submitLabel?: string;
+  initialName?: string;
+  initialDescription?: string;
 }
 
-export function CreateTeamModal({ isOpen, onClose, onCreate, isLoading }: CreateTeamModalProps) {
-  const [teamName, setTeamName] = useState("");
-  const [teamDescription, setTeamDescription] = useState("");
-const [creating, setCreating] = useState(false);
+export function CreateTeamModal({
+  isOpen,
+  onClose,
+  onCreate,
+  isLoading,
+  title = "Create new team",
+  descriptionText = "Set up a team with a clear name and an optional working description.",
+  submitLabel = "Create Team",
+  initialName = "",
+  initialDescription = "",
+}: CreateTeamModalProps) {
+  const [teamName, setTeamName] = useState(initialName);
+  const [teamDescription, setTeamDescription] = useState(initialDescription);
+  const [creating, setCreating] = useState(false);
 
   if (!isOpen) return null;
 
@@ -34,24 +49,25 @@ const [creating, setCreating] = useState(false);
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-96">
-        <h2 className="text-xl font-bold mb-4 text-gray-900">Create New Team</h2>
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="surface-card-strong w-full max-w-md rounded-[1.6rem] p-6">
+        <h2 className="text-xl font-bold text-slate-950">{title}</h2>
+        <p className="mt-2 text-sm text-slate-600">{descriptionText}</p>
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Team Name </label>
+        <div className="mb-4 mt-5">
+          <label className="mb-2 block text-sm font-medium text-slate-700">Team Name </label>
           <input
             type="text"
             value={teamName}
             onChange={(e) => setTeamName(e.target.value)}
             placeholder="Enter team name"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="pro-input"
             autoFocus
           />
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="mb-2 block text-sm font-medium text-slate-700">
             Description (Optional)
           </label>
           <textarea
@@ -59,22 +75,22 @@ const [creating, setCreating] = useState(false);
             onChange={(e) => setTeamDescription(e.target.value)}
             placeholder="Enter team description"
             rows={3}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="pro-textarea"
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <button
             onClick={handleCreate}
             disabled={creating || !teamName.trim()}
-            className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            className="flex-1 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            {isLoading ? "Creating..." : "Create Team"}
+            {isLoading ? `${submitLabel}...` : submitLabel}
           </button>
           
           <button
             onClick={handleClose}
-            className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors"
+            className="flex-1 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
           >
             Cancel
           </button>

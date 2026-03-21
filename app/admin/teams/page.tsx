@@ -174,8 +174,10 @@ export default function TeamsPage() {
 
   return (
     <div className="space-y-6">
+      <section className="admin-hero rounded-[1.85rem] px-6 py-7">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">Admin catalog</p>
           <h1 className="text-3xl font-bold text-gray-900">Teams</h1>
           <p className="mt-2 text-gray-600">
             Create teams, reassign owners, and clean up unused team spaces.
@@ -183,11 +185,12 @@ export default function TeamsPage() {
         </div>
         <button
           onClick={openCreate}
-          className="rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-semibold text-white hover:bg-cyan-700"
+          className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
         >
           Create Team
         </button>
       </div>
+      </section>
 
       {error ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -195,20 +198,20 @@ export default function TeamsPage() {
         </div>
       ) : null}
 
-      <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+      <div className="admin-table p-6">
         <div className="mb-6">
           <input
             type="text"
             placeholder="Search teams by name, owner, or description..."
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:border-cyan-500"
+            className="admin-input"
           />
         </div>
 
         <div className="overflow-x-auto">
           <table className="min-w-[980px] w-full">
-            <thead className="border-b border-gray-200 bg-gray-50">
+            <thead className="border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Team</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Owner</th>
@@ -220,7 +223,7 @@ export default function TeamsPage() {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredTeams.map((team) => (
-                <tr key={team.id} className="transition-colors hover:bg-gray-50">
+                <tr key={team.id} className="transition-colors hover:bg-slate-50">
                   <td className="px-6 py-4">
                     <div className="font-medium text-gray-900">{team.name}</div>
                     <div className="mt-1 max-w-md text-sm text-gray-500">
@@ -270,8 +273,8 @@ export default function TeamsPage() {
       </div>
 
       {showModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
-          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-xl">
+        <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="admin-panel w-full max-w-2xl rounded-3xl p-6 shadow-xl">
             <h2 className="text-xl font-semibold text-slate-950">
               {editingTeam ? "Edit Team" : "Create Team"}
             </h2>
@@ -289,7 +292,7 @@ export default function TeamsPage() {
                 onChange={(event) =>
                   setForm((current) => ({ ...current, name: event.target.value }))
                 }
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                className="admin-input"
               />
               <textarea
                 placeholder="Description"
@@ -298,14 +301,14 @@ export default function TeamsPage() {
                   setForm((current) => ({ ...current, description: event.target.value }))
                 }
                 rows={4}
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                className="admin-textarea"
               />
               <select
                 value={form.owner_id}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, owner_id: event.target.value }))
                 }
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                className="admin-select"
               >
                 <option value="">Select owner</option>
                 {users.map((user) => (

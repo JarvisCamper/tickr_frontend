@@ -20,29 +20,30 @@ export function ProjectModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
-      <div className="bg-white rounded-lg p-6 w-96">
-        <h2 className="text-xl font-bold mb-4">Create New Project</h2>
+    <div className="modal-backdrop fixed inset-0 z-40 flex items-center justify-center p-4">
+      <div className="surface-card-strong w-full max-w-md rounded-[1.6rem] p-6">
+        <h2 className="text-xl font-bold text-slate-950">Create a quick project</h2>
+        <p className="mt-2 text-sm text-slate-600">Add a project without leaving the timer flow.</p>
         <input
           type="text"
           value={projectName}
           onChange={(e) => setProjectName(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && onCreate()}
           placeholder="Project name"
-          className="w-full px-4 py-2 border rounded-md mb-4 text-black"
+          className="pro-input mt-5"
           autoFocus
         />
-        <div className="flex gap-2">
+        <div className="mt-5 flex gap-3">
           <button
             onClick={onCreate}
             disabled={isLoading}
-            className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 disabled:bg-gray-400"
+            className="flex-1 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:bg-slate-300"
           >
             {isLoading ? "Creating..." : "Create"}
           </button>
           <button
             onClick={onClose}
-            className="flex-1 bg-gray-300 px-4 py-2 rounded-md hover:bg-gray-400"
+            className="flex-1 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
           >
             Cancel
           </button>

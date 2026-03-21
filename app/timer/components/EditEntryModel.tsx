@@ -99,31 +99,32 @@ export function EditEntryModal({
   if (!isOpen || !entry) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-[500px]">
-        <h2 className="text-xl font-bold mb-4 text-gray-900">Edit Time Entry</h2>
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="surface-card-strong w-full max-w-2xl rounded-[1.6rem] p-6 sm:p-8">
+        <h2 className="text-xl font-bold text-slate-950">Edit time entry</h2>
+        <p className="mt-2 text-sm text-slate-600">Adjust the task, project, or timestamps for this saved session.</p>
 
-        <div className="space-y-4">
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="mb-2 block text-sm font-medium text-slate-700">
               Description
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
+              className="pro-textarea"
               rows={3}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="mb-2 block text-sm font-medium text-slate-700">
               Project
             </label>
             <select
               value={projectId || ''}
               onChange={(e) => setProjectId(e.target.value ? Number(e.target.value) : null)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
+              className="pro-select"
             >
               <option value="">No Project</option>
               {projects.map((project) => (
@@ -135,45 +136,47 @@ export function EditEntryModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="mb-2 block text-sm font-medium text-slate-700">
               Start Time
             </label>
             <input
               type="datetime-local"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
+              className="pro-input"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="mb-2 block text-sm font-medium text-slate-700">
               End Time
             </label>
             <input
               type="datetime-local"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
+              className="pro-input"
             />
           </div>
         </div>
 
-        <div className="flex gap-2 mt-6">
-          {validationError && (
-            <div className="w-full text-sm text-red-600 mb-2">{validationError}</div>
-          )}
+        {validationError && (
+          <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+            {validationError}
+          </div>
+        )}
+        <div className="mt-6 flex gap-3">
           <button
             onClick={handleSave}
             disabled={loading}
-            className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 disabled:bg-gray-400"
+            className="flex-1 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:bg-slate-300"
           >
             {loading ? 'Saving...' : 'Save Changes'}
           </button>
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
+            className="flex-1 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
           >
             Cancel
           </button>

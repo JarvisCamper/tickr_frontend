@@ -10,6 +10,7 @@ interface TeamCardProps {
   onViewProjects: (team: Team) => void;
   onInvite: (team: Team) => void;
   onAssignProject: (team: Team) => void;
+  onEdit: (team: Team) => void;
   onDelete: (teamId: number) => void;
 }
 
@@ -37,6 +38,7 @@ const TeamCardComponent = ({
   onViewProjects,
   onInvite,
   onAssignProject,
+  onEdit,
   onDelete,
 }: TeamCardProps) => {
   // Filter projects assigned to this team - handle both team_id and team object
@@ -51,18 +53,18 @@ const TeamCardComponent = ({
   const isOwner = currentId === ownerId;
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+    <div className="surface-card rounded-[1.6rem] p-6 transition hover:-translate-y-0.5 hover:shadow-[0_20px_40px_rgba(15,23,42,0.12)]">
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="text-xl font-semibold text-gray-900">{team.name}</h3>
+          <h3 className="text-xl font-semibold tracking-tight text-slate-950">{team.name}</h3>
           {!isOwner && (
-            <p className="text-xs text-gray-400 mt-1">Member (View Only)</p>
+            <p className="mt-1 text-xs font-medium text-slate-400">Member access</p>
           )}
         </div>
         {isOwner && (
           <button
             onClick={() => onDelete(team.id)}
-            className="text-red-500 hover:text-red-700"
+            className="rounded-full border border-rose-200 p-2 text-rose-600 transition hover:bg-rose-50"
             title="Delete team"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,12 +79,13 @@ const TeamCardComponent = ({
         )}
       </div>
 
-      <p className="text-gray-600 mb-4 line-clamp-2">
+      <p className="mb-5 line-clamp-2 text-sm leading-6 text-slate-600">
         {team.description || "No description"}
       </p>
 
-      <div className="space-y-2 mb-4">
-        <div className="flex items-center text-sm text-gray-500">
+      <div className="mb-5 grid gap-3">
+        <div className="rounded-2xl bg-slate-50 px-4 py-3">
+        <div className="flex items-center text-sm text-slate-600">
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
@@ -94,7 +97,9 @@ const TeamCardComponent = ({
           <span>{team.member_count}</span>{" "}
           <span>{team.member_count === 1 ? "member" : "members"}</span>
         </div>
-        <div className="flex items-center text-sm text-gray-500">
+        </div>
+        <div className="rounded-2xl bg-slate-50 px-4 py-3">
+        <div className="flex items-center text-sm text-slate-600">
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
@@ -106,7 +111,9 @@ const TeamCardComponent = ({
           <span>{assignedProjects.length}</span>{" "}
           <span>{assignedProjects.length === 1 ? "project" : "projects"}</span>
         </div>
-        <div className="flex items-center text-sm text-gray-500">
+        </div>
+        <div className="rounded-2xl bg-slate-50 px-4 py-3">
+        <div className="flex items-center text-sm text-slate-600">
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
@@ -118,6 +125,7 @@ const TeamCardComponent = ({
           <span className="ml-1">
             Created by <strong>{team.owner?.username || "Unknown"}</strong>
           </span>
+        </div>
         </div>
       </div>
 
@@ -154,10 +162,17 @@ const TeamCardComponent = ({
           >
             Assign Project
           </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit(team)}
+          >
+            Edit Team
+          </Button>
         </div>
       )}
 
-      <div className="mt-4 text-xs text-gray-400">
+      <div className="mt-5 border-t border-slate-200 pt-4 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
         Created {formatDate(team.created_at)}
       </div>
     </div>

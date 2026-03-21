@@ -160,6 +160,11 @@ export function useAuth() {
 }
 
 // ============ Utilities ============
+export function isAdminUser(user: User | null | undefined): boolean {
+  if (!user) return false;
+  return Boolean(user.is_admin || user.is_staff || user.is_superuser || user.role === 'admin');
+}
+
 /**
  * Get authentication headers with bearer token
  */

@@ -56,61 +56,72 @@ export function TimeEntriesTable({
   onPageChange,
 }: TimeEntriesTableProps) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h2 className="text-xl font-bold text-gray-900">My Time Entries</h2>
+    <section className="table-shell">
+      <div className="flex flex-col gap-2 border-b border-slate-200 px-6 py-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="section-title">Recent time entries</h2>
+          <p className="section-subtitle">Review, edit, or remove logged work from your latest sessions.</p>
+        </div>
+        <div className="stat-pill">{entries.length} entries on this page</div>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="border-b border-slate-200">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Description</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Project</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Start Time</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">End Time</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Duration</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Actions</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Description</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Project</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Start</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">End</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Duration</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-slate-100">
             {entries.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                  No time entries yet. Start tracking your time!
+                <td colSpan={6} className="px-6 py-14">
+                  <div className="empty-panel rounded-[1.25rem] px-6 py-10 text-center">
+                    <div className="text-lg font-semibold text-slate-900">No time entries yet</div>
+                    <div className="mt-2 text-sm text-slate-500">Start a timer to build your first work log.</div>
+                  </div>
                 </td>
               </tr>
             ) : (
               entries.map((entry) => (
-                <tr key={entry.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm text-gray-900">
-                    {entry.description || '-'}
+                <tr key={entry.id} className="transition hover:bg-slate-50/70">
+                  <td className="px-6 py-4 text-sm text-slate-900">
+                    <div className="font-semibold">{entry.description || 'Untitled work'}</div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">
-                    {entry.project_name || "No project"}
+                  <td className="px-6 py-4 text-sm text-slate-700">
+                    <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                      {entry.project_name || "No project"}
+                    </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">
+                  <td className="px-6 py-4 text-sm text-slate-700">
                     {formatDateTime(entry.start_time)}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">
+                  <td className="px-6 py-4 text-sm text-slate-700">
                     {formatDateTime(entry.end_time)}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900 font-mono">
+                  <td className="px-6 py-4 text-sm font-semibold text-slate-900">
                     {entry.duration_str || formatDuration(entry.duration)}
                   </td>
-                  <td className="px-6 py-4 text-sm flex gap-2">
-                    <button
-                      onClick={() => onEdit(entry)}
-                      className="text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => onDelete(entry.id)}
-                      className="text-red-600 hover:text-red-800 font-medium"
-                    >
-                      Delete
-                    </button>
+                  <td className="px-6 py-4 text-sm">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => onEdit(entry)}
+                        className="rounded-full border border-slate-200 px-3 py-1.5 font-semibold text-slate-700 transition hover:bg-slate-100"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => onDelete(entry.id)}
+                        className="rounded-full border border-rose-200 px-3 py-1.5 font-semibold text-rose-700 transition hover:bg-rose-50"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -120,11 +131,11 @@ export function TimeEntriesTable({
       </div>
 
       {totalPages > 1 && (
-        <div className="px-6 py-4 border-t border-gray-200 flex justify-center gap-2">
+        <div className="flex flex-wrap items-center justify-center gap-2 border-t border-slate-200 px-6 py-5">
           <button
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="px-4 py-2 bg-gray-100 text-gray-900 rounded-md hover:bg-gray-200 disabled:opacity-50"
+            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
           >
             Previous
           </button>
@@ -132,10 +143,10 @@ export function TimeEntriesTable({
             <button
               key={i + 1}
               onClick={() => onPageChange(i + 1)}
-              className={`px-4 py-2 rounded-md ${
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                 currentPage === i + 1
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                  ? 'bg-slate-950 text-white'
+                  : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
               }`}
             >
               {i + 1}
@@ -144,12 +155,12 @@ export function TimeEntriesTable({
           <button
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-gray-100 text-gray-900 rounded-md hover:bg-gray-200 disabled:opacity-50"
+            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
           >
             Next
           </button>
         </div>
       )}
-    </div>
+    </section>
   );
 }

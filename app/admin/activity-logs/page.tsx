@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Activity, Search, ShieldCheck, Trash2, UserCog } from "lucide-react";
 import { safeFetch } from "../utils/apiHelper";
 
@@ -70,7 +70,7 @@ function SummaryCard({
   tone: string;
 }) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="admin-panel rounded-3xl p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
@@ -90,37 +90,84 @@ export default function ActivityLogsPage() {
   const [filterAction, setFilterAction] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const initRef = useRef(false);
+  const safeFetchWithTimeout = async (endpoint: string, timeoutMs = 12000) => {
+    return await Promise.race([
+      safeFetch(endpoint),
+      new Promise<null>((resolve) => {
+        window.setTimeout(() => resolve(null), timeoutMs);
+      }),
+    ]);
+  };
+
+  async function fetchLogs() {
+    setLoading(true);
+    setError("");
+
+    try {
+      const [auditResult, authResult] = await Promise.allSettled([
+        safeFetchWithTimeout("/admin/api/activity-logs/"),
+        safeFetchWithTimeout("/admin/api/auth-events/"),
+      ]);
+
+      const auditData = auditResult.status === "fulfilled" ? auditResult.value : null;
+      const authData = authResult.status === "fulfilled" ? authResult.value : null;
+
+      setLogs(auditData ? (Array.isArray(auditData) ? auditData : auditData.results || []) : []);
+      setAuthEvents(authData ? (Array.isArray(authData) ? authData : authData.results || []) : []);
+
+      if (!auditData && !authData) {
+        setError("Could not load activity logs right now.");
+      } else if (!auditData) {
+        setError("Activity log records could not be loaded, but access history is available.");
+      } else if (!authData) {
+        setError("User access history could not be loaded, but admin activity logs are available.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
-    fetchLogs();
+    let cancelled = false;
+
+    const loadInitialLogs = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const [auditResult, authResult] = await Promise.allSettled([
+          safeFetchWithTimeout("/admin/api/activity-logs/"),
+          safeFetchWithTimeout("/admin/api/auth-events/"),
+        ]);
+
+        if (cancelled) return;
+
+        const auditData = auditResult.status === "fulfilled" ? auditResult.value : null;
+        const authData = authResult.status === "fulfilled" ? authResult.value : null;
+
+        setLogs(auditData ? (Array.isArray(auditData) ? auditData : auditData.results || []) : []);
+        setAuthEvents(authData ? (Array.isArray(authData) ? authData : authData.results || []) : []);
+
+        if (!auditData && !authData) {
+          setError("Could not load activity logs right now.");
+        } else if (!auditData) {
+          setError("Activity log records could not be loaded, but access history is available.");
+        } else if (!authData) {
+          setError("User access history could not be loaded, but admin activity logs are available.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadInitialLogs();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  const fetchLogs = async () => {
-    const [auditData, authData] = await Promise.all([
-      safeFetch("/admin/api/activity-logs/"),
-      safeFetch("/admin/api/auth-events/"),
-    ]);
-
-    if (auditData) {
-      setLogs(Array.isArray(auditData) ? auditData : auditData.results || []);
-    } else {
-      setLogs([]);
-    }
-
-    if (authData) {
-      setAuthEvents(Array.isArray(authData) ? authData : authData.results || []);
-    } else {
-      setAuthEvents([]);
-    }
-
-    if (!auditData && !authData) {
-      setError("Failed to load activity logs.");
-    }
-    setLoading(false);
-  };
 
   const filteredLogs = useMemo(
     () =>
@@ -176,7 +223,7 @@ export default function ActivityLogsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[28px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,#f0fdf4_0%,#f8fafc_42%,#ffffff_100%)] px-6 py-7 shadow-sm">
+      <section className="admin-hero rounded-[1.85rem] px-6 py-7">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Audit Trail</p>
@@ -207,7 +254,7 @@ export default function ActivityLogsPage() {
         <SummaryCard label="Destructive Events" value={stats.destructiveEvents} icon={summaryIconMap.destructive} tone="bg-rose-50" />
       </div>
 
-      <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <section className="admin-panel rounded-3xl overflow-hidden">
         <div className="border-b border-slate-200 px-5 py-5">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px_180px]">
             <label className="relative block">
@@ -220,14 +267,14 @@ export default function ActivityLogsPage() {
                 placeholder="Search by admin, description, target, or IP..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-2xl border border-slate-300 py-3 pl-11 pr-4 text-sm outline-none focus:border-emerald-500"
+                className="admin-input py-3 pl-11 pr-4 text-sm"
               />
             </label>
 
             <select
               value={filterAction}
               onChange={(e) => setFilterAction(e.target.value)}
-              className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-emerald-500"
+              className="admin-select px-4 py-3 text-sm"
             >
               <option value="">All Actions</option>
               {uniqueActions.map((action) => (
@@ -255,7 +302,7 @@ export default function ActivityLogsPage() {
             {filteredLogs.map((log) => (
               <article
                 key={log.id}
-                className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition-colors hover:bg-slate-50"
+                className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition-colors hover:bg-white"
               >
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                   <div className="min-w-0 flex-1">
@@ -302,7 +349,7 @@ export default function ActivityLogsPage() {
         </div>
       </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <section className="admin-panel rounded-3xl overflow-hidden">
         <div className="border-b border-slate-200 px-5 py-5">
           <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -329,7 +376,7 @@ export default function ActivityLogsPage() {
             {filteredAuthEvents.map((event) => (
               <article
                 key={`auth-${event.id}`}
-                className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition-colors hover:bg-slate-50"
+                className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition-colors hover:bg-white"
               >
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                   <div className="min-w-0 flex-1">

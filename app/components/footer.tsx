@@ -13,17 +13,20 @@ export default function Footer() {
   }
 
   return (
-    <footer className="bg-gray-800 text-white py-4 mt-auto">
-      <div className="max-w-6xl mx-auto px-4 sm:px-8">
-        <div className="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
-          <div className="text-sm">
-            © 2025 Tickr. All rights reserved.
-          </div>
-          <div className="flex space-x-6 text-sm">
-              <Link href="/PNP" className="hover:text-blue-400">Privacy Policy</Link>
-              <Link href="/TNS" className="hover:text-blue-400">Terms of Service</Link>
-              <Link href="/Contact" className="hover:text-blue-400">Contact</Link>
+    <footer className="px-3 pb-5 sm:px-6">
+      <div className="mx-auto max-w-7xl rounded-[1.75rem] border border-white/60 bg-slate-950 px-6 py-6 text-white shadow-[0_24px_48px_rgba(15,23,42,0.18)]">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="text-base font-semibold tracking-tight">Tickr employee workspace</div>
+            <div className="mt-1 text-sm text-slate-300">
+              © 2026 Tickr. Focused time tracking, cleaner collaboration, and clearer reporting.
             </div>
+          </div>
+          <div className="flex flex-wrap gap-5 text-sm text-slate-300">
+            <Link href="/PNP" className="transition hover:text-white">Privacy Policy</Link>
+            <Link href="/TNS" className="transition hover:text-white">Terms of Service</Link>
+            <Link href="/Contact" className="transition hover:text-white">Contact</Link>
+          </div>
         </div>
       </div>
     </footer>

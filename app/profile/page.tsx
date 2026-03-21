@@ -5,10 +5,13 @@ import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { getApiUrl } from "@/constant/apiendpoints";
 import { useToast } from "../../context-and-provider";
+import { Camera, Mail, ShieldCheck, UserRound } from "lucide-react";
+import { useEmployeeRouteGuard } from "@/app/hooks/useEmployeeRouteGuard";
 
 export default function ProfilePage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { isEmployeeAllowed } = useEmployeeRouteGuard();
 
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -19,6 +22,8 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    if (!isEmployeeAllowed) return;
+
     const fetchUser = async () => {
       try {
         const token = Cookies.get("access_token");
@@ -51,7 +56,7 @@ export default function ProfilePage() {
     };
 
     fetchUser();
-  }, [router, showToast]);
+  }, [isEmployeeAllowed, router, showToast]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -100,6 +105,7 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
     await uploadAvatar(file);
+    e.target.value = "";
   };
 
   const uploadAvatar = async (file: File) => {
@@ -122,34 +128,60 @@ export default function ProfilePage() {
         return;
       }
 
-      const form = new FormData();
-      form.append('avatar', file);
+      const makeAvatarForm = (fieldName: 'avatar' | 'profile_picture') => {
+        const form = new FormData();
+        form.append(fieldName, file);
+        return form;
+      };
 
-      // First try: PATCH to 'user/' with multipart form data (many DRF setups accept this)
-      let resp = await fetch(getApiUrl('/api/user/'), {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: form,
-      });
+      const attempts: Array<{
+        label: string;
+        url: string;
+        method: 'PATCH' | 'POST';
+        fieldName: 'avatar' | 'profile_picture';
+      }> = [
+        { label: 'PATCH /api/user/ avatar', url: getApiUrl('/api/user/'), method: 'PATCH', fieldName: 'avatar' },
+        { label: 'PATCH /api/user/ profile_picture', url: getApiUrl('/api/user/'), method: 'PATCH', fieldName: 'profile_picture' },
+        { label: 'POST /api/user/avatar/ avatar', url: getApiUrl('/api/user/avatar/'), method: 'POST', fieldName: 'avatar' },
+        { label: 'POST /api/user/avatar/ profile_picture', url: getApiUrl('/api/user/avatar/'), method: 'POST', fieldName: 'profile_picture' },
+      ];
 
-      // If backend doesn't accept PATCH multipart, try POST to 'user/avatar/' (older or custom endpoints)
-      if (resp.status === 404 || resp.status === 405 || resp.status === 400) {
+      let resp: Response | null = null;
+      let lastBodyText = '';
+
+      for (const attempt of attempts) {
         try {
-          resp = await fetch(getApiUrl('/api/user/avatar/'), {
-            method: 'POST',
+          const candidate = await fetch(attempt.url, {
+            method: attempt.method,
             headers: {
               'Authorization': `Bearer ${token}`,
             },
-            body: form,
+            body: makeAvatarForm(attempt.fieldName),
           });
-        } catch (e) {
-          // swallow and handle below
+
+          if (candidate.ok) {
+            resp = candidate;
+            lastBodyText = '';
+            break;
+          }
+
+          lastBodyText = await candidate.text().catch(() => '');
+          resp = candidate;
+
+          if (candidate.status === 401) {
+            router.push('/login');
+            return;
+          }
+
+          if (candidate.status === 403) {
+            break;
+          }
+        } catch {
+          // Try the next known backend variant.
         }
       }
 
-      if (resp.ok) {
+      if (resp?.ok) {
         const data = await resp.json().catch(() => null);
         const newUrl = data?.avatar || data?.profile_picture || data?.avatar_url || data?.avatar_url_full || null;
         if (newUrl) setProfilePicture(newUrl);
@@ -157,24 +189,19 @@ export default function ProfilePage() {
         // notify other parts
         window.dispatchEvent(new Event('auth-changed'));
       } else {
-        let bodyText = '';
-        try {
-          bodyText = await resp.text();
-        } catch (e) {
-          bodyText = '';
-        }
-        console.error('Avatar upload failed', resp.status, bodyText);
+        const status = resp?.status ?? 0;
+        const bodyText = lastBodyText;
         let parsed: any = {};
-        try { parsed = JSON.parse(bodyText || '{}'); } catch(e) { parsed = {}; }
-        // Helpful guidance when 404 indicates endpoint missing
-        if (resp.status === 404) {
+        try { parsed = JSON.parse(bodyText || '{}'); } catch { parsed = {}; }
+        if (status === 404) {
           showToast('Upload endpoint not found on server (404). Ask backend to add avatar upload or accept multipart PATCH to /api/user/.', 'error');
+        } else if (status === 500) {
+          showToast('The server failed while processing the image upload. The frontend retried the common avatar endpoints, so this likely needs a backend fix.', 'error');
         } else {
-          showToast(parsed.detail || parsed.error || `Failed to upload picture (status ${resp.status})`, 'error');
+          showToast(parsed.detail || parsed.error || `Failed to upload picture${status ? ` (status ${status})` : ''}`, 'error');
         }
       }
-    } catch (err) {
-      console.error('Upload avatar error:', err);
+    } catch {
       showToast('Failed to upload picture', 'error');
     } finally {
       setUploadingPicture(false);
@@ -234,59 +261,96 @@ export default function ProfilePage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-3xl mx-auto px-4">
-        <h1 className="text-3xl font-bold mb-6">Edit Profile</h1>
+  if (!isEmployeeAllowed) {
+    return null;
+  }
 
-        <div className="bg-white p-6 rounded-md shadow-sm">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-              {profilePicture ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={profilePicture} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                <div className="text-gray-400">No photo</div>
-              )}
+  return (
+    <div className="employee-page">
+      <div className="app-shell max-w-5xl">
+        <section className="employee-hero rounded-4xl px-6 py-8 sm:px-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.26em] text-slate-500">Account settings</p>
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950">Profile</h1>
+              <p className="mt-3 text-base text-slate-600">Keep your identity and avatar up to date so the workspace feels consistent across teams and reports.</p>
             </div>
-            <div className="flex flex-col gap-2">
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-              <button onClick={triggerFileInput} className="bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-600">
-                {uploadingPicture ? 'Uploading...' : 'Change picture'}
-              </button>
-              <button onClick={handleDeletePicture} className="bg-red-100 text-red-600 px-3 py-2 rounded-md hover:bg-red-200">
-                Delete picture
-              </button>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="surface-card rounded-[1.4rem] px-5 py-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Security</div>
+                <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-slate-900"><ShieldCheck className="h-4 w-4 text-emerald-600" /> Protected account</div>
+              </div>
+              <div className="surface-card rounded-[1.4rem] px-5 py-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Identity</div>
+                <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-slate-900"><Mail className="h-4 w-4 text-blue-600" /> {email || 'No email set'}</div>
+              </div>
             </div>
           </div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
-          <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full border border-gray-200 rounded-md px-3 py-2 mb-4 text-black"
-          />
+        </section>
 
-          <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-gray-200 rounded-md px-3 py-2 mb-4 text-black"
-          />
+        <div className="surface-card mt-8 rounded-[1.8rem] p-6 sm:p-8">
+          <div className="grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)]">
+            <div className="rounded-[1.6rem] bg-slate-950 px-6 py-7 text-white">
+              <div className="flex flex-col items-center text-center">
+                <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/10">
+                  {profilePicture ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={profilePicture} alt="Profile" className="h-full w-full object-cover" />
+                  ) : (
+                    <UserRound className="h-10 w-10 text-white/70" />
+                  )}
+                </div>
+                <div className="mt-5 text-lg font-semibold">{username || 'Unnamed user'}</div>
+                <div className="mt-1 text-sm text-slate-300">{email}</div>
+                <div className="mt-6 flex w-full flex-col gap-3">
+                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                  <button onClick={triggerFileInput} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100">
+                    <Camera className="h-4 w-4" />
+                    {uploadingPicture ? 'Uploading...' : 'Change picture'}
+                  </button>
+                  <button onClick={handleDeletePicture} className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/15">
+                    Delete picture
+                  </button>
+                </div>
+              </div>
+            </div>
 
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 disabled:bg-gray-400"
-            >
-              {isSaving ? 'Saving...' : 'Save changes'}
-            </button>
-            <button
-              onClick={() => router.back()}
-              className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300"
-            >
-              Cancel
-            </button>
+            <div>
+              <div className="mb-6">
+                <h2 className="section-title">Personal details</h2>
+                <p className="section-subtitle">Update the information displayed in your employee workspace.</p>
+              </div>
+
+              <label className="mb-2 block text-sm font-medium text-slate-700">Username</label>
+              <input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="pro-input mb-5"
+              />
+
+              <label className="mb-2 block text-sm font-medium text-slate-700">Email</label>
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="pro-input mb-6"
+              />
+
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:bg-slate-300"
+                >
+                  {isSaving ? 'Saving...' : 'Save changes'}
+                </button>
+                <button
+                  onClick={() => router.back()}
+                  className="rounded-2xl bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

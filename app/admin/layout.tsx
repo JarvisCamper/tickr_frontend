@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAdminAuth } from "./hooks/useAdminAuth";
 import { Sidebar } from "./components/Sidebar";
 import { AdminHeader } from "./components/AdminHeader";
+import { AdminFooter } from "./components/AdminFooter";
 import Cookies from "js-cookie";
 
 export default function AdminLayout({
@@ -15,6 +16,7 @@ export default function AdminLayout({
   const router = useRouter();
   const { isAdmin, isLoading } = useAdminAuth();
   const hasCheckedRef = useRef(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     if (!isLoading && !hasCheckedRef.current) {
@@ -60,12 +62,18 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex bg-[linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] min-h-screen">
-      <Sidebar />
+    <div className="admin-shell flex">
+      <Sidebar isOpen={sidebarOpen} />
       <div className="flex-1 flex flex-col">
-        <AdminHeader />
-        <main className="flex-1 overflow-auto p-6 md:p-8">
-          <div className="max-w-7xl mx-auto">{children}</div>
+        <AdminHeader
+          sidebarOpen={sidebarOpen}
+          onToggleSidebar={() => setSidebarOpen((current) => !current)}
+        />
+        <main className="flex-1 overflow-auto px-4 pb-6 pt-3 md:px-6 md:pb-8 md:pt-4">
+          <div className="mx-auto flex min-h-full max-w-7xl flex-col">
+            <div className="flex-1">{children}</div>
+            <AdminFooter />
+          </div>
         </main>
       </div>
     </div>

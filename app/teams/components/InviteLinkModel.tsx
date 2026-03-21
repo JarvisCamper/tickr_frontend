@@ -44,16 +44,16 @@ export function InviteLinkModal({
   if (!isOpen || !team) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-[500px]">
-        <h2 className="text-xl font-bold mb-4 text-gray-900">Invitation Link Ready!</h2>
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="surface-card-strong w-full max-w-xl rounded-[1.6rem] p-6">
+        <h2 className="text-xl font-bold text-slate-950">Invitation link ready</h2>
 
-        <p className="text-gray-600 mb-4">
+        <p className="mb-4 text-slate-600">
           Share this link with people you want to invite to <strong>{team.name}</strong>.{" "}
           They&apos;ll need to login to accept the invitation.
         </p>
 
-        <div className="bg-gray-50 p-3 rounded-md mb-4 break-all text-sm font-mono">
+        <div className="mb-4 break-all rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-mono text-slate-700">
           {invitationLink}
         </div>
 

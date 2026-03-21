@@ -83,7 +83,7 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-7">
+    <section className="admin-panel rounded-3xl p-6 md:p-7">
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
         <p className="text-sm text-slate-500 mt-1">{description}</p>
@@ -289,7 +289,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-[28px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,#ecfeff_0%,#f8fafc_48%,#ffffff_100%)] p-6 md:p-7 shadow-sm">
+      <div className="admin-hero rounded-[1.85rem] p-6 md:p-7">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">Admin Control Center</p>
@@ -336,7 +336,7 @@ export default function SettingsPage() {
                   type="text"
                   value={settings.app_name}
                   onChange={(e) => updateSetting("app_name", e.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                  className="admin-input mt-2"
                 />
               </div>
               <div>
@@ -345,7 +345,7 @@ export default function SettingsPage() {
                   type="email"
                   value={settings.support_email}
                   onChange={(e) => updateSetting("support_email", e.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                  className="admin-input mt-2"
                 />
               </div>
               <div>
@@ -354,10 +354,10 @@ export default function SettingsPage() {
                   type="number"
                   value={settings.session_timeout}
                   onChange={(e) => updateSetting("session_timeout", asNumber(e.target.value, 60))}
-                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                  className="admin-input mt-2"
                 />
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/90 p-4">
                 <p className="text-sm font-medium text-slate-900">Access Policy</p>
                 <div className="mt-4 space-y-3">
                   <label className="flex items-center justify-between gap-4">
@@ -391,7 +391,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+            <div className="rounded-2xl border border-slate-200 bg-white/75 p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h4 className="font-semibold text-slate-900">Change Admin Password</h4>
@@ -404,21 +404,21 @@ export default function SettingsPage() {
                   placeholder="Current password"
                   value={passwordForm.current_password}
                   onChange={(e) => setPasswordForm((current) => ({ ...current, current_password: e.target.value }))}
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                  className="admin-input"
                 />
                 <input
                   type="password"
                   placeholder="New password"
                   value={passwordForm.new_password}
                   onChange={(e) => setPasswordForm((current) => ({ ...current, new_password: e.target.value }))}
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                  className="admin-input"
                 />
                 <input
                   type="password"
                   placeholder="Confirm new password"
                   value={passwordForm.confirm_password}
                   onChange={(e) => setPasswordForm((current) => ({ ...current, confirm_password: e.target.value }))}
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                  className="admin-input"
                 />
               </div>
               <button
@@ -442,7 +442,7 @@ export default function SettingsPage() {
                   type="number"
                   value={settings.max_projects_per_user}
                   onChange={(e) => updateSetting("max_projects_per_user", asNumber(e.target.value, 50))}
-                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                  className="admin-input mt-2"
                 />
               </div>
               <div>
@@ -451,7 +451,7 @@ export default function SettingsPage() {
                   type="number"
                   value={settings.max_team_members}
                   onChange={(e) => updateSetting("max_team_members", asNumber(e.target.value, 20))}
-                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                  className="admin-input mt-2"
                 />
               </div>
               <div>
@@ -460,7 +460,7 @@ export default function SettingsPage() {
                   type="number"
                   value={settings.team_invite_expiry_days}
                   onChange={(e) => updateSetting("team_invite_expiry_days", asNumber(e.target.value, 7))}
-                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                  className="admin-input mt-2"
                 />
               </div>
             </div>
@@ -478,7 +478,7 @@ export default function SettingsPage() {
                   step="0.25"
                   value={settings.standard_daily_hours}
                   onChange={(e) => updateSetting("standard_daily_hours", e.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                  className="admin-input mt-2"
                 />
               </div>
               <div>
@@ -488,7 +488,7 @@ export default function SettingsPage() {
                   step="0.01"
                   value={settings.overtime_hourly_rate}
                   onChange={(e) => updateSetting("overtime_hourly_rate", e.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                  className="admin-input mt-2"
                 />
               </div>
               <div>
@@ -498,13 +498,13 @@ export default function SettingsPage() {
                   step="0.01"
                   value={settings.overtime_multiplier}
                   onChange={(e) => updateSetting("overtime_multiplier", e.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                  className="admin-input mt-2"
                 />
               </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-4">
                 <div>
                   <p className="font-medium text-slate-900">Prevent overlapping entries</p>
                   <p className="text-sm text-slate-500 mt-1">Use as policy for future time-entry enforcement and audits.</p>
@@ -516,7 +516,7 @@ export default function SettingsPage() {
                   className="h-5 w-5 rounded"
                 />
               </label>
-              <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-4">
                 <div>
                   <p className="font-medium text-slate-900">Require timer description</p>
                   <p className="text-sm text-slate-500 mt-1">Enabled in the timer start flow.</p>
@@ -548,7 +548,7 @@ export default function SettingsPage() {
               {emailToggleFields.map(({ key, label }) => (
                 <label
                   key={key}
-                  className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"
+                className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-4"
                 >
                   <span className="text-sm font-medium text-slate-800">{label}</span>
                   <input
@@ -576,14 +576,14 @@ export default function SettingsPage() {
                 type="number"
                 value={settings.audit_log_retention_days}
                 onChange={(e) => updateSetting("audit_log_retention_days", asNumber(e.target.value, 180))}
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500"
+                className="admin-input mt-2"
               />
             </div>
 
             <div className="grid gap-4">
               <button
                 onClick={() => handleDownload("/admin/api/settings/export/activity-logs/", "tickr-activity-logs.csv")}
-                className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left hover:bg-slate-100"
+                className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-4 text-left hover:bg-slate-100"
               >
                 <span>
                   <span className="block font-medium text-slate-900">Export Activity Logs</span>
@@ -593,7 +593,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => handleDownload("/admin/api/settings/export/reports/", "tickr-time-report.csv")}
-                className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left hover:bg-slate-100"
+                className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-4 text-left hover:bg-slate-100"
               >
                 <span>
                   <span className="block font-medium text-slate-900">Export Time Reports</span>
@@ -604,7 +604,7 @@ export default function SettingsPage() {
             </div>
           </SectionCard>
 
-          <div className="rounded-3xl border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
+          <div className="rounded-3xl border border-slate-900 bg-slate-950 p-6 text-white shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">Deploy Settings</p>
             <h3 className="mt-3 text-xl font-semibold">Save the current admin configuration</h3>
             <p className="mt-2 text-sm text-slate-300">

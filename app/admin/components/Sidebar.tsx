@@ -10,7 +10,6 @@ import {
   FolderKanban,
   Timer,
   ChartColumn,
-  ScrollText,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -22,11 +21,14 @@ const menuItems = [
   { label: "Projects", href: "/admin/projects", icon: FolderKanban },
   { label: "Time Entries", href: "/admin/time-entries", icon: Timer },
   { label: "Analytics", href: "/admin/analytics", icon: ChartColumn },
-  { label: "Activity Logs", href: "/admin/activity-logs", icon: ScrollText },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
-export function Sidebar() {
+export function Sidebar({
+  isOpen,
+}: {
+  isOpen: boolean;
+}) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -52,10 +54,26 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-72 border-r border-gray-200 bg-white h-screen sticky top-0 overflow-y-auto">
-      <div className="p-6 border-b border-gray-100">
-        <h1 className="text-2xl font-bold text-gray-900">Tickr</h1>
-        <p className="text-sm mt-1 text-gray-500">Admin Portal</p>
+    <aside
+      className={`admin-sidebar sticky top-0 h-screen overflow-y-auto text-white transition-[width,opacity] duration-300 ${
+        isOpen ? "w-80 opacity-100" : "w-0 opacity-0 pointer-events-none"
+      }`}
+    >
+      <div className="flex min-h-full flex-col">
+      <div className="border-b border-white/10 p-6">
+        <div className="flex items-center gap-3">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-cyan-400 via-sky-400 to-blue-500 text-lg font-black text-slate-950 shadow-lg shadow-cyan-950/20">
+            T
+          </span>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-white">Tickr</h1>
+            <p className="mt-1 text-sm text-slate-300">Admin command center</p>
+          </div>
+        </div>
+        <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">Workspace</p>
+          <p className="mt-2 text-sm text-slate-200">Monitor users, projects, analytics, and security events.</p>
+        </div>
       </div>
 
       <nav className="px-4 py-5">
@@ -70,10 +88,10 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
+                className={`flex items-center gap-3 rounded-2xl px-4 py-3 transition-all ${
                   isActive
-                    ? "bg-cyan-50 text-cyan-700 border border-cyan-200"
-                    : "text-gray-600 hover:bg-gray-50 border border-transparent"
+                    ? "border border-cyan-400/30 bg-linear-to-r from-cyan-400/20 to-sky-400/12 text-white shadow-lg shadow-cyan-950/10"
+                    : "border border-transparent text-slate-300 hover:bg-white/6 hover:text-white"
                 }`}
               >
                 <Icon size={18} />
@@ -84,14 +102,21 @@ export function Sidebar() {
         </div>
       </nav>
 
-      <div className="sticky bottom-0 left-0 right-0 p-4 border-t border-gray-100 bg-white">
+      <div className="mt-auto border-t border-white/10 bg-slate-950/75 px-4 pb-5 pt-6 backdrop-blur">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Admin footer</p>
+          <p className="mt-2 text-sm text-slate-300">
+            Secure management tools for people, projects, reporting, and system settings.
+          </p>
+        </div>
         <button
           onClick={() => void handleLogout()}
-          className="w-full px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl transition-colors font-medium flex items-center justify-center gap-2"
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-500/12 px-4 py-3 font-medium text-rose-200 transition-colors hover:bg-rose-500/20"
         >
           <LogOut size={16} />
           Logout
         </button>
+      </div>
       </div>
     </aside>
   );

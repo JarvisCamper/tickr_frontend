@@ -7,13 +7,13 @@ import { ProjectModal } from './components/ProjectModal';
 import { EditEntryModal } from './components/EditEntryModel';
 import { useTimer } from './hooks/useTimer';
 import { useToast } from "../../context-and-provider";
-import { useAuth } from "../../context-and-provider/AuthContext";
+import { useEmployeeRouteGuard } from "@/app/hooks/useEmployeeRouteGuard";
 import { TimeEntry, Project } from './types';
 import { getApiUrl } from '@/constant/apiendpoints';
 
 export default function TimerPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isLoading: authLoading, isEmployeeAllowed } = useEmployeeRouteGuard();
   const { time, isRunning, isPaused, formatTime, startTimer, pauseTimer, resumeTimer, stopTimer, getAuthHeaders } = useTimer();
   const { showToast } = useToast();
   
@@ -43,14 +43,8 @@ export default function TimerPage() {
   };
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push('/login');
-    }
-  }, [isAuthenticated, authLoading, router]);
-
-  useEffect(() => {
     // Prevent double invocation under React Strict Mode in dev
-    if (!isAuthenticated || initLoadedRef.current) return;
+    if (!isEmployeeAllowed || initLoadedRef.current) return;
     initLoadedRef.current = true;
 
     // Fetch all data in parallel instead of sequentially
@@ -59,7 +53,7 @@ export default function TimerPage() {
       fetchTimeEntries(),
       checkActiveTimer()
     ]);
-  }, [isAuthenticated]);
+  }, [isEmployeeAllowed]);
 
   const checkActiveTimer = async () => {
     try {
@@ -358,41 +352,67 @@ export default function TimerPage() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isEmployeeAllowed) {
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Time Tracker</h1>
+    <div className="employee-page">
+      <div className="app-shell">
+        <section className="employee-hero rounded-4xl px-6 py-8 sm:px-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.26em] text-slate-500">Employee workspace</p>
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950">Time tracker</h1>
+              <p className="mt-3 text-base text-slate-600">
+                Log focused work, keep entries organized, and maintain a clean audit trail for your day.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="surface-card rounded-[1.4rem] px-5 py-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Mode</div>
+                <div className="mt-2 text-lg font-semibold text-slate-900">{isRunning ? 'Running' : 'Idle'}</div>
+              </div>
+              <div className="surface-card rounded-[1.4rem] px-5 py-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Projects</div>
+                <div className="mt-2 text-lg font-semibold text-slate-900">{projects.length}</div>
+              </div>
+              <div className="surface-card rounded-[1.4rem] px-5 py-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Entries</div>
+                <div className="mt-2 text-lg font-semibold text-slate-900">{timeEntries.length}</div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-        <TimeControl
-          description={description}
-          setDescription={setDescription}
-          selectedProjectId={selectedProjectId}
-          setSelectedProjectId={setSelectedProjectId}
-          projects={projects}
-          time={time}
-          formatTime={formatTime}
-          isRunning={isRunning}
-          isPaused={isPaused}
-          isActionPending={isActionPending}
-          onStart={handleStart}
-          onPause={pauseTimer}
-          onResume={resumeTimer}
-          onStop={handleStop}
-          onAddProject={() => setShowProjectModal(true)}
-        />
+        <div className="mt-8 space-y-8">
+          <TimeControl
+            description={description}
+            setDescription={setDescription}
+            selectedProjectId={selectedProjectId}
+            setSelectedProjectId={setSelectedProjectId}
+            projects={projects}
+            time={time}
+            formatTime={formatTime}
+            isRunning={isRunning}
+            isPaused={isPaused}
+            isActionPending={isActionPending}
+            onStart={handleStart}
+            onPause={pauseTimer}
+            onResume={resumeTimer}
+            onStop={handleStop}
+            onAddProject={() => setShowProjectModal(true)}
+          />
 
-        <TimeEntriesTable
-          entries={currentEntries}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-        />
+          <TimeEntriesTable
+            entries={currentEntries}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </div>
 
         <ProjectModal
           isOpen={showProjectModal}

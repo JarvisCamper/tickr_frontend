@@ -1,7 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "./components/navbar";
-import Footer from './components/footer';
+import LayoutFrame from "./components/LayoutFrame";
 import { Providers } from "../context-and-provider/Providers";
 
 
@@ -27,11 +26,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <Providers>
-          <Navbar />
-          <main className="pt-20 pb-20 min-h-screen">
-            {children}
-          </main>
-          <Footer />
+          <LayoutFrame>{children}</LayoutFrame>
         </Providers>
       </body>
     </html>

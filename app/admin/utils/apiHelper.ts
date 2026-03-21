@@ -18,15 +18,26 @@ export const getAuthHeaders = () => {
  * Safe fetch for admin API endpoints
  * Handles JSON parsing errors gracefully
  */
-export const safeFetch = async (endpoint: string) => {
+export const safeFetch = async (
+  endpoint: string,
+  options?: {
+    timeoutMs?: number;
+  }
+) => {
   try {
     const url = getApiUrl(endpoint);
     const headers = getAuthHeaders();
-    console.debug('[safeFetch] Request', { url, hasAuth: !!headers['Authorization'] });
+    const timeoutMs = options?.timeoutMs ?? 8000;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
 
     const response = await fetch(url, {
       headers,
       credentials: "include",
+      signal: controller.signal,
+      cache: "no-store",
+    }).finally(() => {
+      window.clearTimeout(timeoutId);
     });
 
     if (!response.ok) {
@@ -44,6 +55,10 @@ export const safeFetch = async (endpoint: string) => {
 
     return await response.json();
   } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      console.warn(`API timeout after request waited too long: ${endpoint}`);
+      return null;
+    }
     console.error("Error fetching from API:", endpoint, err);
     return null;
   }
