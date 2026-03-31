@@ -69,13 +69,13 @@ export default function Navbar() {
     return null;
   }
 
-  // ============ Render ============
+  // Render 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 px-3 pt-3 sm:px-6">
       <div className="mx-auto flex max-w-7xl items-center justify-between rounded-[1.6rem] border border-white/70 bg-white/82 px-4 py-3 shadow-[0_18px_40px_rgba(15,23,42,0.12)] backdrop-blur-xl sm:px-6">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-700 via-blue-600 to-teal-500 text-base font-black text-white shadow-lg shadow-blue-900/20">
+          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-linear-to-br from-blue-700 via-blue-600 to-teal-500 text-base font-black text-white shadow-lg shadow-blue-900/20">
             T
           </span>
           <div>

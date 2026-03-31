@@ -235,7 +235,7 @@ export default function AdminScreenshotsPage() {
           <div className="grid gap-5 p-5 md:grid-cols-2 xl:grid-cols-3">
             {filteredScreenshots.map((item) => (
               <article key={item.id} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                <div className="aspect-[16/10] bg-slate-100">
+                <div className="aspect-16/10 bg-slate-100">
                   {item.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={item.image_url} alt={`Screenshot ${item.id}`} className="h-full w-full object-cover" />

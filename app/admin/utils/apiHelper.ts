@@ -15,8 +15,8 @@ export const getAuthHeaders = () => {
 };
 
 /**
- * Safe fetch for admin API endpoints
- * Handles JSON parsing errors gracefully
+ Safe fetch for admin API endpoints
+ Handles JSON parsing errors gracefully
  */
 export const safeFetch = async (
   endpoint: string,

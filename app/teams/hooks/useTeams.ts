@@ -57,15 +57,33 @@ const parseErrorResponse = async (response: Response) => {
   }
 };
 
+const normalizeNumericId = (value: unknown): number | null => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+};
+
 // Helper function to normalize project data structure
 const normalizeProject = (project: any): Project => {
+  const teamId = normalizeNumericId(project.team?.id ?? project.team_id);
+
   return {
     ...project,
-    team_id: project.team?.id ?? project.team_id ?? null,
-    team: project.team ?? (project.team_id ? { 
-      id: project.team_id, 
-      name: project.team_name || '' 
-    } : null)
+    type: typeof project.type === "string" ? project.type.toLowerCase() : "",
+    team_id: teamId,
+    team: teamId
+      ? {
+          id: teamId,
+          name: project.team?.name || project.team_name || "",
+        }
+      : null,
   };
 };
 
@@ -154,7 +172,8 @@ export function useTeams() {
       }
 
       const data = await response.json();
-      const normalizedProjects = data.map(normalizeProject);
+      const projectList = Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : [];
+      const normalizedProjects = projectList.map(normalizeProject);
       
       setProjects(normalizedProjects);
     } catch (err) {
@@ -354,7 +373,7 @@ export function useTeams() {
       const response = await fetch(fullUrl, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ project_id: projectId }),
+        body: JSON.stringify({ project_id: Number(projectId) }),
       });
 
       console.log("🔵 Response status:", response.status);

@@ -20,7 +20,10 @@ export function ViewProjectsModal({
 }: ViewProjectsModalProps) {
   if (!isOpen || !team) return null;
 
-  const teamProjects = projects.filter((p) => p.team_id === team.id);
+  const teamProjects = projects.filter((project) => {
+    const assignedTeamId = project.team?.id ?? project.team_id;
+    return Number(assignedTeamId) === Number(team.id);
+  });
 
   const handleUnassign = (projectId: number) => {
     if (confirm("Unassign this project from the team?")) {

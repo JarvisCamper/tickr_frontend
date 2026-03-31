@@ -105,7 +105,7 @@ export function Sidebar({
       </nav>
 
       <div className="mt-auto border-t border-white/10 bg-slate-950/75 px-4 pb-5 pt-6 backdrop-blur">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
+        <div className="rounded-2xl border border-white/10 bg-white/4 px-4 py-4">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Admin footer</p>
           <p className="mt-2 text-sm text-slate-300">
             Secure management tools for people, projects, reporting, and system settings.

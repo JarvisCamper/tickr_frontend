@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, FormEvent, useEffect, Suspense } from "react";
+import React, { useState, FormEvent, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../../context-and-provider/AuthContext";
@@ -17,15 +17,29 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
 
+  const getRedirectTarget = useCallback(() => {
+    const redirect = searchParams.get("redirect");
+
+    if (!redirect || !redirect.startsWith("/")) {
+      return null;
+    }
+
+    if (redirect.startsWith("//")) {
+      return null;
+    }
+
+    return redirect;
+  }, [searchParams]);
+
   useEffect(() => {
     // If already authenticated on page load, redirect
     if (isAuthenticated && user) {
       const userData = user as any;
       const isAdmin = userData.is_admin || userData.is_staff || userData.is_superuser || userData.role === 'admin';
-      const target = isAdmin ? '/admin' : '/timer';
+      const target = getRedirectTarget() || (isAdmin ? '/admin' : '/timer');
       router.replace(target);
     }
-  }, [isAuthenticated, user, router]);
+  }, [getRedirectTarget, isAuthenticated, user, router]);
 
   const togglePass = () => setShowPass(!showPass);
 
@@ -53,8 +67,8 @@ function LoginForm() {
       login(data.access, data.refresh, data.user as any);
       window.dispatchEvent(new Event("auth-changed"));
 
-      // Even shorter (recommended, uses backend decision):
-      router.replace(data.redirect_url || "/employee");
+      const redirectTarget = getRedirectTarget();
+      router.replace(redirectTarget || data.redirect_url || "/employee");
 
     } catch (err: any) {
       // Parse and show user-friendly error messages

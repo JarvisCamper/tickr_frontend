@@ -24,11 +24,12 @@ export function AssignProjectModal({
   const [assigning, setAssigning] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
-  if (!isOpen || !team) return null;
+  const unassignedProjects = projects.filter((project) => {
+    const projectType = String(project.type || "").toLowerCase();
+    const assignedTeamId = project.team?.id ?? project.team_id;
 
-  const unassignedProjects = projects.filter(
-    (p) => p.type === "group" && !(p.team_id || p.team?.id)
-  );
+    return projectType === "group" && !assignedTeamId;
+  });
   const totalPages = Math.max(1, Math.ceil(unassignedProjects.length / PROJECTS_PER_PAGE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const pageStart = (safeCurrentPage - 1) * PROJECTS_PER_PAGE;
@@ -47,6 +48,8 @@ export function AssignProjectModal({
       setCurrentPage(totalPages);
     }
   }, [currentPage, totalPages]);
+
+  if (!isOpen || !team) return null;
 
   const handleAssign = async () => {
     if (!selectedProjectId || !team) return;

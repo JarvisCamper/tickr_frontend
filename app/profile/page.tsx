@@ -67,7 +67,6 @@ export default function ProfilePage() {
         return;
       }
       // Send as multipart/form-data to be compatible with backends
-      // that expect file upload parsers (MultiPartParser) for user updates.
       const form = new FormData();
       form.append('email', email.trim());
       form.append('username', username.trim());
