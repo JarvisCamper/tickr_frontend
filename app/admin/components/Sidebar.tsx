@@ -10,7 +10,6 @@ import {
   FolderKanban,
   Timer,
   ChartColumn,
-  Images,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -21,7 +20,6 @@ const menuItems = [
   { label: "Teams", href: "/admin/teams", icon: UsersRound },
   { label: "Projects", href: "/admin/projects", icon: FolderKanban },
   { label: "Time Entries", href: "/admin/time-entries", icon: Timer },
-  { label: "Screenshots", href: "/admin/screenshots", icon: Images },
   { label: "Analytics", href: "/admin/analytics", icon: ChartColumn },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
@@ -74,7 +72,7 @@ export function Sidebar({
         </div>
         <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">Workspace</p>
-          <p className="mt-2 text-sm text-slate-200">Monitor users, projects, screenshots, analytics, and system settings.</p>
+          <p className="mt-2 text-sm text-slate-200">Monitor users, projects, time entries, analytics, and system settings.</p>
         </div>
       </div>
 

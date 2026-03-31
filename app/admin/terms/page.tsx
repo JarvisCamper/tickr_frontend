@@ -17,23 +17,23 @@ export default function AdminTermsPage() {
             <h2 className="text-2xl font-semibold text-slate-950">Use of Service</h2>
             <ul className="mt-3 list-disc space-y-2 pl-5 leading-7">
               <li>Use the service only for authorized and lawful work-related purposes.</li>
-              <li>Do not tamper with logs, screenshots, timers, or audit records.</li>
-              <li>Screenshots and activity data may be collected while timer tracking is active.</li>
+              <li>Do not tamper with logs, timers, or audit records.</li>
+              <li>Time and activity data may be collected while timer tracking is active.</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-slate-950">Screenshot Monitoring</h2>
+            <h2 className="text-2xl font-semibold text-slate-950">Time Tracking</h2>
             <p className="mt-3 leading-7">
-              Tickr may capture periodic screenshots during tracked work sessions where the organization enables monitoring.
-              Organizations are responsible for informing employees and using monitoring features in compliance with local law.
+              Tickr records tracked work sessions and related activity data while employees use the timer.
+              Organizations are responsible for informing employees and using tracking features in compliance with local law.
             </p>
           </section>
 
           <section>
             <h2 className="text-2xl font-semibold text-slate-950">Administrator Responsibility</h2>
             <p className="mt-3 leading-7">
-              Administrators must use access to logs, reports, screenshots, and account data responsibly and only for legitimate
+              Administrators must use access to logs, reports, and account data responsibly and only for legitimate
               operational, security, or compliance needs.
             </p>
           </section>

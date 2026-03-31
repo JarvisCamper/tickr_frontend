@@ -19,13 +19,13 @@ export default function TermsPage() {
               <ul className="list-disc pl-6">
                 <li>Use the service only for lawful and authorized purposes.</li>
                 <li>Do not attempt to bypass monitoring or tamper with data.</li>
-                <li>Screenshots and activity data are collected while timer is active.</li>
+                <li>Time and activity data are collected while the timer is active.</li>
               </ul>
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold">Screenshot Monitoring</h2>
-              <p>Tickr may capture periodic screenshots while time tracking is active. Use of the platform indicates consent to such monitoring.</p>
+              <h2 className="text-xl font-semibold">Time Tracking</h2>
+              <p>Tickr records time-tracking activity while work sessions are active. Use of the platform indicates consent to that tracking.</p>
             </section>
 
             <section>

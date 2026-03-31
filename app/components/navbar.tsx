@@ -120,18 +120,9 @@ export default function Navbar() {
                 href="/profile"
                 className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
               >
-                {user?.avatar && (
-                  <img
-                    src={user.avatar}
-                    alt="User avatar"
-                    className="h-9 w-9 rounded-full object-cover"
-                  />
-                )}
-                {!user?.avatar && (
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600">
-                    <UserRound className="h-4 w-4" />
-                  </span>
-                )}
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                  <UserRound className="h-4 w-4" />
+                </span>
                 <div className="max-w-44">
                   <span className="block truncate font-semibold text-slate-900">{user?.username || 'My profile'}</span>
                   <span className="block truncate text-xs text-slate-500">{user?.email}</span>
@@ -200,18 +191,9 @@ export default function Navbar() {
                 className="mt-3 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
                 onClick={() => setIsMenuOpen(false)}
               >
-                {user?.avatar && (
-                  <img
-                    src={user.avatar}
-                    alt="User avatar"
-                    className="h-10 w-10 rounded-full object-cover"
-                  />
-                )}
-                {!user?.avatar && (
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600">
-                    <UserRound className="h-4 w-4" />
-                  </span>
-                )}
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                  <UserRound className="h-4 w-4" />
+                </span>
                 <div className="min-w-0">
                   <span className="block truncate font-semibold text-slate-900">{user?.username || 'My profile'}</span>
                   <span className="block truncate text-xs text-slate-500">{user?.email}</span>

@@ -250,12 +250,12 @@ export default function AdminDashboard() {
           <p className="text-sm text-gray-600 mt-2">Review growth and platform activity.</p>
         </Link>
         <Link
-          href="/admin/screenshots"
+          href="/admin/projects"
           className="admin-panel rounded-[1.7rem] p-6 hover:border-cyan-200 transition-colors"
         >
-          <p className="text-sm text-gray-500">Review</p>
-          <h3 className="text-lg font-semibold text-gray-900 mt-1">Screenshots</h3>
-          <p className="text-sm text-gray-600 mt-2">Inspect captured work-session screenshots by user and project.</p>
+          <p className="text-sm text-gray-500">Organize</p>
+          <h3 className="text-lg font-semibold text-gray-900 mt-1">Projects</h3>
+          <p className="text-sm text-gray-600 mt-2">Manage active projects and review ownership across the workspace.</p>
         </Link>
         <Link
           href="/admin/time-entries"
