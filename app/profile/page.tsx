@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { getApiUrl } from "@/constant/apiendpoints";
 import { useToast } from "../../context-and-provider";
-import { Mail, ShieldCheck, UserRound } from "lucide-react";
+import { Mail, ShieldCheck } from "lucide-react";
 import { useEmployeeRouteGuard } from "@/app/hooks/useEmployeeRouteGuard";
 
 export default function ProfilePage() {
@@ -127,55 +127,40 @@ export default function ProfilePage() {
         </section>
 
         <div className="surface-card mt-8 rounded-[1.8rem] p-6 sm:p-8">
-          <div className="grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)]">
-            <div className="rounded-[1.6rem] bg-slate-950 px-6 py-7 text-white">
-              <div className="flex flex-col items-center text-center">
-                <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/10">
-                  <UserRound className="h-10 w-10 text-white/70" />
-                </div>
-                <div className="mt-5 text-lg font-semibold">{username || 'Unnamed user'}</div>
-                <div className="mt-1 text-sm text-slate-300">{email}</div>
-                <div className="mt-6 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
-                  Profile pictures are disabled for this workspace.
-                </div>
-              </div>
+          <div>
+            <div className="mb-6">
+              <h2 className="section-title">Personal details</h2>
+              <p className="section-subtitle">Update the information displayed in your employee workspace.</p>
             </div>
 
-            <div>
-              <div className="mb-6">
-                <h2 className="section-title">Personal details</h2>
-                <p className="section-subtitle">Update the information displayed in your employee workspace.</p>
-              </div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">Username</label>
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="pro-input mb-5"
+            />
 
-              <label className="mb-2 block text-sm font-medium text-slate-700">Username</label>
-              <input
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="pro-input mb-5"
-              />
+            <label className="mb-2 block text-sm font-medium text-slate-700">Email</label>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="pro-input mb-6"
+            />
 
-              <label className="mb-2 block text-sm font-medium text-slate-700">Email</label>
-              <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pro-input mb-6"
-              />
-
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:bg-slate-300"
-                >
-                  {isSaving ? 'Saving...' : 'Save changes'}
-                </button>
-                <button
-                  onClick={() => router.back()}
-                  className="rounded-2xl bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-                >
-                  Cancel
-                </button>
-              </div>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:bg-slate-300"
+              >
+                {isSaving ? 'Saving...' : 'Save changes'}
+              </button>
+              <button
+                onClick={() => router.back()}
+                className="rounded-2xl bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
