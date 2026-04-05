@@ -24,16 +24,14 @@ export function AssignProjectModal({
   const [assigning, setAssigning] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const unassignedProjects = projects.filter((project) => {
-    const projectType = String(project.type || "").toLowerCase();
+  const assignableProjects = projects.filter((project) => {
     const assignedTeamId = project.team?.id ?? project.team_id;
-
-    return projectType === "group" && !assignedTeamId;
+    return !assignedTeamId;
   });
-  const totalPages = Math.max(1, Math.ceil(unassignedProjects.length / PROJECTS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(assignableProjects.length / PROJECTS_PER_PAGE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const pageStart = (safeCurrentPage - 1) * PROJECTS_PER_PAGE;
-  const paginatedProjects = unassignedProjects.slice(
+  const paginatedProjects = assignableProjects.slice(
     pageStart,
     pageStart + PROJECTS_PER_PAGE
   );
@@ -83,14 +81,16 @@ export function AssignProjectModal({
 
         <div className="mb-4">
           <label className="mb-2 block text-sm font-medium text-slate-700">Select Project *</label>
-          {unassignedProjects.length === 0 ? (
+          {assignableProjects.length === 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-center text-sm text-slate-500">
-              Only unassigned group projects are shown here. Create a group project, or unassign one from another team first.
+              No unassigned projects are available. Create a project first, or unassign one from another team.
             </div>
           ) : (
             <select
               value={selectedProjectId || ""}
-              onChange={(e) => setSelectedProjectId(Number(e.target.value))}
+              onChange={(e) =>
+                setSelectedProjectId(e.target.value ? Number(e.target.value) : null)
+              }
               className="pro-select"
             >
               <option value="">-- Select a project --</option>
@@ -103,10 +103,10 @@ export function AssignProjectModal({
           )}
         </div>
 
-        {unassignedProjects.length > PROJECTS_PER_PAGE && (
+        {assignableProjects.length > PROJECTS_PER_PAGE && (
           <div className="mb-4 flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
             <span>
-              Showing {pageStart + 1}-{Math.min(pageStart + PROJECTS_PER_PAGE, unassignedProjects.length)} of {unassignedProjects.length}
+              Showing {pageStart + 1}-{Math.min(pageStart + PROJECTS_PER_PAGE, assignableProjects.length)} of {assignableProjects.length}
             </span>
             <div className="flex items-center gap-2">
               <button
@@ -130,6 +130,12 @@ export function AssignProjectModal({
               </button>
             </div>
           </div>
+        )}
+
+        {!selectedProjectId && assignableProjects.length > 0 && (
+          <p className="mb-4 text-sm text-slate-500">
+            Choose a project to enable assignment.
+          </p>
         )}
 
         <div className="flex gap-3">
