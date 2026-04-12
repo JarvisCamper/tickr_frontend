@@ -271,6 +271,14 @@ export default function SettingsPage() {
         tone: "bg-sky-50 text-sky-700",
       },
       {
+        label: "OT Base Rate",
+        value: `$${settings.overtime_hourly_rate}`,
+        tone:
+          Number(settings.overtime_hourly_rate) > 0
+            ? "bg-emerald-50 text-emerald-700"
+            : "bg-amber-50 text-amber-700",
+      },
+      {
         label: "Email Rules",
         value: settings.invite_emails_enabled ? "Enabled" : "Quiet",
         tone: settings.invite_emails_enabled ? "bg-cyan-50 text-cyan-700" : "bg-slate-100 text-slate-700",
@@ -310,6 +318,13 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {Number(settings.overtime_hourly_rate) <= 0 ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Overtime pay will remain <span className="font-semibold">$0.00</span> until you set an
+          <span className="font-semibold"> Overtime Hourly Rate</span> above zero.
+        </div>
+      ) : null}
 
       {error ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">

@@ -68,7 +68,7 @@ function LoginForm() {
       window.dispatchEvent(new Event("auth-changed"));
 
       const redirectTarget = getRedirectTarget();
-      router.replace(redirectTarget || data.redirect_url || "/employee");
+      router.replace(redirectTarget || data.redirect_url || "/timer");
 
     } catch (err: any) {
       // Parse and show user-friendly error messages

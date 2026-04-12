@@ -54,7 +54,7 @@ export async function apiLogin(
     status: res.status,
     data: {
       ...body,
-      redirect_url: body.redirect_url || '/employee',
+      redirect_url: body.redirect_url || '/timer',
     },
   };
 }

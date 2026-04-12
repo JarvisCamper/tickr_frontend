@@ -154,6 +154,9 @@ export default function AdminTimeEntriesPage() {
     };
   }, [entries]);
 
+  const showZeroRateWarning =
+    Number(stats.totalOvertimeHours) > 0 && Number(stats.totalOvertimePay) === 0;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -208,6 +211,13 @@ export default function AdminTimeEntriesPage() {
           tone="bg-cyan-50"
         />
       </div>
+
+      {showZeroRateWarning ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Overtime hours are being calculated, but overtime pay is still zero. This usually means the overtime hourly
+          rate in Admin Settings is set to <span className="font-semibold">0.00</span>.
+        </div>
+      ) : null}
 
       {error ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
