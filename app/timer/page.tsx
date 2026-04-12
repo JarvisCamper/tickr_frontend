@@ -231,15 +231,22 @@ export default function TimerPage() {
     await ensureCaptureVideoReady(stream);
     setScreenshotStatus("active");
 
+    let hasHandledShareEnd = false;
+    const handleScreenShareEnded = () => {
+      if (hasHandledShareEnd) return;
+      hasHandledShareEnd = true;
+      stopScreenshotMonitoring(false);
+      screenStreamRef.current = null;
+      captureVideoRef.current = null;
+      captureCanvasRef.current = null;
+      void forceStopTimerAfterScreenShareEnded();
+    };
+
     stream.getVideoTracks().forEach((track) => {
-      track.addEventListener("ended", () => {
-        stopScreenshotMonitoring(false);
-        screenStreamRef.current = null;
-        captureVideoRef.current = null;
-        captureCanvasRef.current = null;
-        void forceStopTimerAfterScreenShareEnded();
-      });
+      track.addEventListener("ended", handleScreenShareEnded, { once: true });
+      track.onended = handleScreenShareEnded;
     });
+    stream.addEventListener("inactive", handleScreenShareEnded, { once: true });
 
     await uploadScreenshot(entryId);
 
