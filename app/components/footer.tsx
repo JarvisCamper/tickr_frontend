@@ -23,9 +23,9 @@ export default function Footer() {
             </div>
           </div>
           <div className="flex flex-wrap gap-5 text-sm text-slate-300">
-            <Link href="/PNP" className="transition hover:text-white">Privacy Policy</Link>
-            <Link href="/TNS" className="transition hover:text-white">Terms of Service</Link>
-            <Link href="/Contact" className="transition hover:text-white">Contact</Link>
+            <Link href="/pnp" className="transition hover:text-white">Privacy Policy</Link>
+            <Link href="/tns" className="transition hover:text-white">Terms of Service</Link>
+            <Link href="/contact" className="transition hover:text-white">Contact</Link>
           </div>
         </div>
       </div>
