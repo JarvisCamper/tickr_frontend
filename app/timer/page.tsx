@@ -58,6 +58,40 @@ export default function TimerPage() {
     return null;
   };
 
+  const extractErrorMessage = (payload: unknown, fallback: string) => {
+    if (!payload) return fallback;
+
+    if (typeof payload === "string") {
+      const trimmed = payload.trim();
+      if (!trimmed) return fallback;
+
+      try {
+        return extractErrorMessage(JSON.parse(trimmed), fallback);
+      } catch {
+        return trimmed;
+      }
+    }
+
+    if (typeof payload === "object") {
+      const detail = (payload as Record<string, unknown>).detail;
+      if (typeof detail === "string" && detail.trim()) {
+        return detail.trim();
+      }
+
+      const message = (payload as Record<string, unknown>).message;
+      if (typeof message === "string" && message.trim()) {
+        return message.trim();
+      }
+    }
+
+    return fallback;
+  };
+
+  const readErrorMessage = async (response: Response, fallback: string) => {
+    const raw = await response.text().catch(() => "");
+    return extractErrorMessage(raw, fallback);
+  };
+
   const stopMediaStream = (stream?: MediaStream | null) => {
     stream?.getTracks().forEach((track) => track.stop());
   };
@@ -185,8 +219,8 @@ export default function TimerPage() {
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
-      throw new Error(errorText || "Failed to upload screenshot");
+      const errorMessage = await readErrorMessage(response, "Failed to upload screenshot.");
+      throw new Error(errorMessage);
     }
 
     setLastScreenshotAt(new Date().toLocaleString());
@@ -452,9 +486,28 @@ export default function TimerPage() {
         }
 
         if (pendingStream && resolvedEntryId) {
-          await beginScreenshotMonitoring(pendingStream, resolvedEntryId);
-          pendingStream = null;
-          showToast("Timer started and screenshot monitoring is active!", "success");
+          try {
+            await beginScreenshotMonitoring(pendingStream, resolvedEntryId);
+            pendingStream = null;
+            showToast("Timer started and screenshot monitoring is active!", "success");
+          } catch (error) {
+            stopMediaStream(pendingStream);
+            pendingStream = null;
+
+            try {
+              await fetch(getApiUrl("/api/entries/stop/"), {
+                method: "POST",
+                headers: getAuthHeaders(),
+                credentials: "include",
+              });
+            } catch (stopError) {
+              console.error("Failed to stop timer after screenshot setup error:", stopError);
+            }
+
+            resetActiveTimerUi("ended");
+            void fetchTimeEntries();
+            throw error;
+          }
         } else {
           if (pendingStream) {
             stopMediaStream(pendingStream);
@@ -472,7 +525,7 @@ export default function TimerPage() {
           pendingStream = null;
         }
         console.error("Start timer error:", data);
-        showToast(data?.detail || "Failed to start timer", "error");
+        showToast(extractErrorMessage(data, "Failed to start timer"), "error");
       }
     } catch (error) {
       if (pendingStream) {
@@ -506,7 +559,7 @@ export default function TimerPage() {
         void fetchTimeEntries();
         showToast("Timer stopped and saved!", "success");
       } else {
-        const errorText = await response.text().catch(() => "");
+        const errorText = await readErrorMessage(response, "Failed to stop timer");
         const backendAlreadyStopped =
           response.status === 400 &&
           /no active|not running|already stopped|no running/i.test(errorText);
@@ -517,7 +570,7 @@ export default function TimerPage() {
           showToast("The timer was already stopped after screen sharing ended.", "info");
         } else {
           console.error("Stop timer error:", errorText);
-          showToast(errorText || "Failed to stop timer", "error");
+          showToast(errorText, "error");
         }
       }
     } catch (error) {
