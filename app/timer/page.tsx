@@ -45,6 +45,7 @@ export default function TimerPage() {
   const captureVideoRef = useRef<HTMLVideoElement | null>(null);
   const captureCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const stopRequestInFlightRef = useRef(false);
+  const forceStopAfterShareEndRef = useRef<() => void>(() => undefined);
 
   const entriesPerPage = 10;
 
@@ -239,7 +240,7 @@ export default function TimerPage() {
       screenStreamRef.current = null;
       captureVideoRef.current = null;
       captureCanvasRef.current = null;
-      void forceStopTimerAfterScreenShareEnded();
+      forceStopAfterShareEndRef.current();
     };
 
     stream.getVideoTracks().forEach((track) => {
@@ -320,6 +321,10 @@ export default function TimerPage() {
 
     if (!shouldResetUi) return;
     showToast("Screen sharing stopped, so the running timer was ended automatically.", "error");
+  };
+
+  forceStopAfterShareEndRef.current = () => {
+    void forceStopTimerAfterScreenShareEnded();
   };
 
   useEffect(() => {
