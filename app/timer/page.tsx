@@ -33,6 +33,7 @@ export default function TimerPage() {
   const [isActionPending, setIsActionPending] = useState(false);
 
   const initLoadedRef = useRef(false);
+  const autosaveTimeoutRef = useRef<number | null>(null);
 
   const entriesPerPage = 10;
 
@@ -52,6 +53,14 @@ export default function TimerPage() {
 
     void Promise.all([fetchProjects(), fetchTimeEntries(), checkActiveTimer()]);
   }, [isEmployeeAllowed]);
+
+  useEffect(() => {
+    return () => {
+      if (autosaveTimeoutRef.current !== null) {
+        window.clearTimeout(autosaveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const checkActiveTimer = async () => {
     try {
@@ -81,14 +90,22 @@ export default function TimerPage() {
     }
   };
 
-  useEffect(() => {
+  const scheduleActiveEntrySync = (
+    nextDescription: string,
+    nextProjectId: number | null
+  ) => {
     if (!isRunning || !activeEntryId) return;
 
-    const timeoutId = window.setTimeout(async () => {
+    if (autosaveTimeoutRef.current !== null) {
+      window.clearTimeout(autosaveTimeoutRef.current);
+    }
+
+    autosaveTimeoutRef.current = window.setTimeout(async () => {
       try {
-        const payload: Record<string, unknown> = {};
-        if (description !== undefined) payload.description = description;
-        if (selectedProjectId !== undefined) payload.project = selectedProjectId;
+        const payload: Record<string, unknown> = {
+          description: nextDescription,
+          project: nextProjectId,
+        };
 
         await fetch(getApiUrl(`/api/entries/${activeEntryId}/`), {
           method: "PATCH",
@@ -100,9 +117,17 @@ export default function TimerPage() {
         console.error("Failed to update active entry:", error);
       }
     }, 1000);
+  };
 
-    return () => window.clearTimeout(timeoutId);
-  }, [description, selectedProjectId, isRunning, activeEntryId]);
+  const handleDescriptionChange = (nextDescription: string) => {
+    setDescription(nextDescription);
+    scheduleActiveEntrySync(nextDescription, selectedProjectId);
+  };
+
+  const handleProjectChange = (nextProjectId: number | null) => {
+    setSelectedProjectId(nextProjectId);
+    scheduleActiveEntrySync(description, nextProjectId);
+  };
 
   const fetchProjects = async () => {
     try {
@@ -390,9 +415,9 @@ export default function TimerPage() {
         <div className="mt-8 space-y-8">
           <TimeControl
             description={description}
-            setDescription={setDescription}
+            onDescriptionChange={handleDescriptionChange}
             selectedProjectId={selectedProjectId}
-            setSelectedProjectId={setSelectedProjectId}
+            onProjectChange={handleProjectChange}
             projects={projects}
             time={time}
             formatTime={formatTime}

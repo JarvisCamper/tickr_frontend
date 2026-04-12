@@ -37,11 +37,6 @@ export function AssignProjectModal({
   );
 
   useEffect(() => {
-    setCurrentPage(1);
-    setSelectedProjectId(null);
-  }, [team?.id, isOpen]);
-
-  useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
     }

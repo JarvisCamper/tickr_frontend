@@ -4,9 +4,9 @@ import React from 'react';
 
 interface TimerControlProps {
   description: string;
-  setDescription: (val: string) => void;
+  onDescriptionChange: (val: string) => void;
   selectedProjectId: number | null;
-  setSelectedProjectId: (val: number | null) => void;
+  onProjectChange: (val: number | null) => void;
   projects: any[];
   time: number;
   formatTime: (seconds: number) => string;
@@ -20,9 +20,9 @@ interface TimerControlProps {
 
 export function TimeControl({
   description,
-  setDescription,
+  onDescriptionChange,
   selectedProjectId,
-  setSelectedProjectId,
+  onProjectChange,
   projects,
   time,
   formatTime,
@@ -55,7 +55,7 @@ export function TimeControl({
           <input
             type="text"
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => onDescriptionChange(e.target.value)}
             placeholder="What are you working on?"
             className="pro-input"
           />
@@ -66,7 +66,7 @@ export function TimeControl({
           <div className="flex gap-2">
             <select
               value={selectedProjectId || ""}
-              onChange={(e) => setSelectedProjectId(e.target.value ? Number(e.target.value) : null)}
+              onChange={(e) => onProjectChange(e.target.value ? Number(e.target.value) : null)}
               className="pro-select"
             >
               <option value="">No project</option>

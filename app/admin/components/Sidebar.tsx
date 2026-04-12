@@ -103,15 +103,9 @@ export function Sidebar({
       </nav>
 
       <div className="mt-auto border-t border-white/10 bg-slate-950/75 px-4 pb-5 pt-6 backdrop-blur">
-        <div className="rounded-2xl border border-white/10 bg-white/4 px-4 py-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Admin footer</p>
-          <p className="mt-2 text-sm text-slate-300">
-            Secure management tools for people, projects, reporting, and system settings.
-          </p>
-        </div>
         <button
           onClick={() => void handleLogout()}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-500/12 px-4 py-3 font-medium text-rose-200 transition-colors hover:bg-rose-500/20"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-500/12 px-4 py-3 font-medium text-rose-200 transition-colors hover:bg-rose-500/20"
         >
           <LogOut size={16} />
           Logout

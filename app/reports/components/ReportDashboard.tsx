@@ -20,6 +20,10 @@ function formatWeekLabel(weekStart: string) {
   return new Date(`${weekStart}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+function formatMonthLabel(year: number, monthIndex: number) {
+  return new Date(year, monthIndex, 1).toLocaleDateString(undefined, { month: "short" });
+}
+
 function makeDonutGradient(projects: any[], total: number) {
   let acc = 0;
   const parts = projects.map(p => {
@@ -35,6 +39,7 @@ export default function ReportDashboard() {
   const { isLoading: authLoading, isEmployeeAllowed } = useEmployeeRouteGuard();
   const { activities, loading, error, activeEntry, activeSeconds, secondsToHMS } = useReports();
   const [groupBy, setGroupBy] = React.useState<GroupBy>('monthly');
+  const currentYear = React.useMemo(() => new Date().getFullYear(), []);
   const [hoveredSegment, setHoveredSegment] = React.useState<{
     label: string;
     lines: string[];
@@ -69,18 +74,50 @@ export default function ReportDashboard() {
       const monthData = map.get(key)!;
       monthData.set(a.project, (monthData.get(a.project) || 0) + a.seconds);
     });
-    return map;
-  }, [activities]);
 
-  const last12Months = React.useMemo(() => {
-    const months = [];
-    const now = new Date();
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    if (activeEntry && activeSeconds > 0) {
+      const now = new Date();
+      const key = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      if (!map.has(key)) map.set(key, new Map<string, number>());
+      const monthData = map.get(key)!;
+      const activeProject = activeEntry.project?.name || 'No project';
+      monthData.set(activeProject, (monthData.get(activeProject) || 0) + activeSeconds);
     }
-    return months;
-  }, []);
+
+    return map;
+  }, [activities, activeEntry, activeSeconds]);
+
+  const availableYears = React.useMemo(() => {
+    const years = new Set<number>([currentYear]);
+    Array.from(byMonth.keys()).forEach((monthKey) => {
+      years.add(Number(monthKey.slice(0, 4)));
+    });
+    return Array.from(years).sort((a, b) => b - a);
+  }, [byMonth, currentYear]);
+
+  const [selectedYear, setSelectedYear] = React.useState(currentYear);
+
+  React.useEffect(() => {
+    if (!availableYears.includes(selectedYear)) {
+      setSelectedYear(availableYears[0] ?? currentYear);
+    }
+  }, [availableYears, currentYear, selectedYear]);
+
+  const monthlyChartData = React.useMemo(() => {
+    return Array.from({ length: 12 }, (_, monthIndex) => {
+      const monthKey = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}`;
+      const monthData = byMonth.get(monthKey) || new Map<string, number>();
+      const totalSeconds = Array.from(monthData.values()).reduce((sum, value) => sum + value, 0);
+
+      return {
+        monthIndex,
+        monthKey,
+        label: formatMonthLabel(selectedYear, monthIndex),
+        monthData,
+        totalSeconds,
+      };
+    });
+  }, [byMonth, selectedYear]);
 
   const byDay = React.useMemo(() => {
     const map = new Map<string, Map<string, number>>();
@@ -194,12 +231,19 @@ export default function ReportDashboard() {
       };
     }
 
+    const topMonth = monthlyChartData.reduce<null | { label: string; totalSeconds: number }>((best, month) => {
+      if (!best || month.totalSeconds > best.totalSeconds) {
+        return { label: month.label, totalSeconds: month.totalSeconds };
+      }
+      return best;
+    }, null);
+
     return {
-      title: "Top Project",
-      label: byProject[0]?.project || "None",
-      total: secondsToHMS(totalSeconds),
+      title: "Top Month",
+      label: topMonth?.totalSeconds ? `${topMonth.label} ${selectedYear}` : "None",
+      total: secondsToHMS(monthlyChartData.reduce((sum, item) => sum + item.totalSeconds, 0)),
     };
-  }, [byProject, dailyChartData, groupBy, totalSeconds, weeklyChartData, secondsToHMS]);
+  }, [dailyChartData, groupBy, monthlyChartData, selectedYear, weeklyChartData, secondsToHMS]);
 
   if (authLoading) return <div className="employee-page"><div className="app-shell flex min-h-[60vh] items-center justify-center"><div className="text-lg text-slate-600">Loading...</div></div></div>;
   if (!isEmployeeAllowed) return null;
@@ -265,7 +309,28 @@ export default function ReportDashboard() {
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-12 lg:col-span-8 space-y-6">
             <div className="surface-card rounded-[1.75rem] p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Time Overview</h3>
+              <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Time Overview</h3>
+                {groupBy === 'monthly' && (
+                  <div className="flex items-center gap-3">
+                    <label htmlFor="monthly-year-filter" className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+                      Year
+                    </label>
+                    <select
+                      id="monthly-year-filter"
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(Number(e.target.value))}
+                      className="pro-select min-w-[120px] py-2"
+                    >
+                      {availableYears.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
               <div className="mb-4 min-h-11 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-600">
                 {hoveredSegment ? (
                   <div>
@@ -335,15 +400,24 @@ export default function ReportDashboard() {
                       );
                     })
                   ) : groupBy === 'monthly' ? (
-                    last12Months.map(monthKey => {
-                      const monthData = byMonth.get(monthKey) || new Map<string, number>();
-                      const monthTotal = Array.from(monthData.values()).reduce((s: number, v: number) => s + v, 0);
-                      const [year, mon] = monthKey.split('-');
-                      const monthLabel = new Date(Number(year), Number(mon) - 1).toLocaleString('en', { month: 'short' });
+                    monthlyChartData.map(({ monthKey, monthData, totalSeconds: monthTotal, label: monthLabel }) => {
                       
                       return (
                         <div key={monthKey} className="min-w-20 flex flex-col items-center">
-                          <div className="flex flex-col-reverse h-48 w-20 rounded-xl overflow-hidden bg-gray-50 shadow-sm">
+                          <div
+                            className="flex h-48 w-20 flex-col-reverse overflow-hidden rounded-xl bg-gray-50 shadow-sm"
+                            onMouseEnter={() =>
+                              setHoveredSegment({
+                                label: `${monthLabel} ${selectedYear}`,
+                                lines: monthTotal > 0
+                                  ? Array.from(monthData.entries())
+                                      .sort((a, b) => b[1] - a[1])
+                                      .map(([project, projectSeconds]) => `${project}: ${secondsToHMS(projectSeconds)}`)
+                                  : ['No tracked time'],
+                              })
+                            }
+                            onMouseLeave={() => setHoveredSegment(null)}
+                          >
                             {Array.from(monthData.entries()).map(([project, seconds]: [string, number]) => {
                               const proj = byProject.find(p => p.project === project);
                               const height = monthTotal ? (seconds / monthTotal) * 100 : 0;
@@ -353,7 +427,7 @@ export default function ReportDashboard() {
                                   title={`${project} — ${secondsToHMS(seconds)}`}
                                   onMouseEnter={() =>
                                     setHoveredSegment({
-                                      label: `${project} in ${monthLabel}`,
+                                      label: `${project} in ${monthLabel} ${selectedYear}`,
                                       lines: [secondsToHMS(seconds)],
                                     })
                                   }
@@ -521,6 +595,20 @@ export default function ReportDashboard() {
                     <div key={week} className="flex justify-between rounded-xl bg-white/70 p-2.5">
                       <div className="text-sm font-medium text-gray-700">{week}</div>
                       <div className="text-sm font-bold text-purple-600">{secondsToHMS(secs)}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {groupBy === 'monthly' && (
+              <div className="surface-card rounded-[1.75rem] bg-linear-to-br from-amber-50/80 to-orange-50/80 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-5">Monthly Summary</h3>
+                <div className="space-y-3">
+                  {monthlyChartData.map(({ monthKey, label, totalSeconds: monthTotal }) => (
+                    <div key={monthKey} className="flex justify-between rounded-xl bg-white/70 p-2.5">
+                      <div className="text-sm font-medium text-gray-700">{label} {selectedYear}</div>
+                      <div className="text-sm font-bold text-amber-700">{secondsToHMS(monthTotal)}</div>
                     </div>
                   ))}
                 </div>

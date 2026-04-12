@@ -1,15 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
 import { getApiUrl } from "@/constant/apiendpoints";
-import { useToast } from "../../context-and-provider";
+import { useAuth, useToast } from "../../context-and-provider";
 import { Mail, ShieldCheck } from "lucide-react";
 import { useEmployeeRouteGuard } from "@/app/hooks/useEmployeeRouteGuard";
 
 export default function ProfilePage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { user, isAuthenticated, isLoading: authContextLoading } = useAuth();
   const { isEmployeeAllowed } = useEmployeeRouteGuard();
 
   const [email, setEmail] = useState("");
@@ -18,46 +18,22 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (!isEmployeeAllowed) return;
+    if (authContextLoading) return;
 
-    const fetchUser = async () => {
-      try {
-        const token = Cookies.get("access_token");
-        if (!token) {
-          router.push('/login');
-          return;
-        }
-        const response = await fetch(getApiUrl('/api/user/'), {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setEmail(data.email || "");
-          setUsername(data.username || "");
-        } else if (response.status === 401) {
-          router.push('/login');
-        } else {
-          showToast('Failed to load profile', 'error');
-        }
-      } catch (err) {
-        console.error('Failed to fetch user:', err);
-        showToast('Failed to load profile', 'error');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    if (!isEmployeeAllowed || !isAuthenticated) {
+      setIsLoading(false);
+      return;
+    }
 
-    fetchUser();
-  }, [isEmployeeAllowed, router, showToast]);
+    setEmail(user?.email || "");
+    setUsername(user?.username || "");
+    setIsLoading(false);
+  }, [authContextLoading, isAuthenticated, isEmployeeAllowed, user]);
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const token = Cookies.get('access_token');
-      if (!token) {
+      if (!isAuthenticated) {
         router.push('/login');
         return;
       }
@@ -68,10 +44,7 @@ export default function ProfilePage() {
 
       const response = await fetch(getApiUrl('/api/user/'), {
         method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          // DO NOT set Content-Type; browser will add the correct boundary
-        },
+        credentials: "include",
         body: form,
       });
 

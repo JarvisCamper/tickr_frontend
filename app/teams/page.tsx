@@ -321,6 +321,7 @@ export default function TeamsPage() {
         />
 
         <AssignProjectModal
+          key={`assign-project-${selectedTeam?.id || "none"}-${showAssignModal ? "open" : "closed"}`}
           isOpen={showAssignModal}
           team={selectedTeam}
           projects={projects}
