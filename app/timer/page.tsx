@@ -44,6 +44,7 @@ export default function TimerPage() {
   const screenStreamRef = useRef<MediaStream | null>(null);
   const captureVideoRef = useRef<HTMLVideoElement | null>(null);
   const captureCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const stopRequestInFlightRef = useRef(false);
 
   const entriesPerPage = 10;
 
@@ -61,6 +62,15 @@ export default function TimerPage() {
     stream?.getTracks().forEach((track) => track.stop());
   };
 
+  const resetActiveTimerUi = (nextScreenshotStatus: ScreenshotStatus = "idle") => {
+    stopTimer();
+    setActiveEntryId(null);
+    setDescription("");
+    setSelectedProjectId(null);
+    setLastScreenshotAt(null);
+    setScreenshotStatus(nextScreenshotStatus);
+  };
+
   const stopScreenshotMonitoring = (stopStream = true) => {
     if (captureIntervalRef.current) {
       window.clearInterval(captureIntervalRef.current);
@@ -76,6 +86,32 @@ export default function TimerPage() {
       captureVideoRef.current = null;
       captureCanvasRef.current = null;
       setScreenshotStatus("idle");
+    }
+  };
+
+  const syncTimerStateFromServer = async () => {
+    try {
+      const response = await fetch(getApiUrl("/api/entries/active/"), {
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        resetActiveTimerUi("ended");
+        return false;
+      }
+
+      const data = await response.json().catch(() => null);
+      if (!data || !data.is_running) {
+        resetActiveTimerUi("ended");
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Failed to sync active timer state:", error);
+      resetActiveTimerUi("ended");
+      return false;
     }
   };
 
@@ -206,6 +242,10 @@ export default function TimerPage() {
   };
 
   const forceStopTimerAfterScreenShareEnded = async () => {
+    if (stopRequestInFlightRef.current) return;
+    stopRequestInFlightRef.current = true;
+    let shouldResetUi = true;
+
     try {
       const response = await fetch(getApiUrl("/api/entries/stop/"), {
         method: "POST",
@@ -215,20 +255,30 @@ export default function TimerPage() {
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => "");
-        throw new Error(errorText || "Failed to stop timer after screen sharing ended.");
+        const backendAlreadyStopped =
+          response.status === 400 &&
+          /no active|not running|already stopped|no running/i.test(errorText);
+
+        if (!backendAlreadyStopped) {
+          throw new Error(errorText || "Failed to stop timer after screen sharing ended.");
+        }
       }
     } catch (error) {
       console.error("Auto-stop timer after screen share end failed:", error);
+      const stillRunning = await syncTimerStateFromServer();
+      if (stillRunning) {
+        shouldResetUi = false;
+      }
     } finally {
-      stopTimer();
-      setActiveEntryId(null);
-      setDescription("");
-      setSelectedProjectId(null);
-      setLastScreenshotAt(null);
-      setScreenshotStatus("ended");
-      void fetchTimeEntries();
-      showToast("Screen sharing stopped, so the running timer was ended automatically.", "error");
+      if (shouldResetUi) {
+        resetActiveTimerUi("ended");
+        void fetchTimeEntries();
+      }
+      stopRequestInFlightRef.current = false;
     }
+
+    if (!shouldResetUi) return;
+    showToast("Screen sharing stopped, so the running timer was ended automatically.", "error");
   };
 
   useEffect(() => {
@@ -438,7 +488,9 @@ export default function TimerPage() {
 
   const handleStop = async () => {
     if (isActionPending) return;
+    if (stopRequestInFlightRef.current) return;
     setIsActionPending(true);
+    stopRequestInFlightRef.current = true;
 
     try {
       stopScreenshotMonitoring();
@@ -450,23 +502,30 @@ export default function TimerPage() {
       });
 
       if (response.ok) {
-        stopTimer();
-        setActiveEntryId(null);
-        setDescription("");
-        setSelectedProjectId(null);
-        setLastScreenshotAt(null);
+        resetActiveTimerUi("idle");
         void fetchTimeEntries();
         showToast("Timer stopped and saved!", "success");
       } else {
-        const errorData = await response.json();
-        console.error("Stop timer error:", errorData);
-        showToast(errorData.detail || "Failed to stop timer", "error");
+        const errorText = await response.text().catch(() => "");
+        const backendAlreadyStopped =
+          response.status === 400 &&
+          /no active|not running|already stopped|no running/i.test(errorText);
+
+        if (backendAlreadyStopped) {
+          resetActiveTimerUi("ended");
+          void fetchTimeEntries();
+          showToast("The timer was already stopped after screen sharing ended.", "info");
+        } else {
+          console.error("Stop timer error:", errorText);
+          showToast(errorText || "Failed to stop timer", "error");
+        }
       }
     } catch (error) {
       console.error("Error stopping timer:", error);
       showToast("Error stopping timer", "error");
     } finally {
       setIsActionPending(false);
+      stopRequestInFlightRef.current = false;
     }
   };
 

@@ -31,6 +31,23 @@ const formatDateTime = (value?: string | null) => {
   return parsed.toLocaleString();
 };
 
+const resolveScreenshotUrl = (value?: string | null) => {
+  if (!value) return null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  try {
+    return new URL(trimmed, getApiUrl("/")).toString();
+  } catch {
+    return trimmed;
+  }
+};
+
 const StatCard = ({
   label,
   value,
@@ -391,10 +408,15 @@ export default function AdminScreenshotsPage() {
             <div className="grid gap-5 p-5 md:grid-cols-2 2xl:grid-cols-3">
               {galleryScreenshots.map((item) => (
                 <article key={item.id} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                  {(() => {
+                    const screenshotUrl = resolveScreenshotUrl(item.image_url);
+
+                    return (
+                      <>
                   <div className="aspect-16/10 bg-slate-100">
-                    {item.image_url ? (
+                    {screenshotUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={item.image_url} alt={`Screenshot ${item.id}`} className="h-full w-full object-cover" />
+                      <img src={screenshotUrl} alt={`Screenshot ${item.id}`} className="h-full w-full object-cover" />
                     ) : (
                       <div className="flex h-full items-center justify-center text-slate-400">
                         <ImageIcon className="h-10 w-10" />
@@ -425,9 +447,9 @@ export default function AdminScreenshotsPage() {
                       </p>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      {item.image_url ? (
+                      {screenshotUrl ? (
                         <a
-                          href={item.image_url}
+                          href={screenshotUrl}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex text-sm font-semibold text-cyan-700 hover:text-cyan-800"
@@ -448,6 +470,9 @@ export default function AdminScreenshotsPage() {
                       </button>
                     </div>
                   </div>
+                      </>
+                    );
+                  })()}
                 </article>
               ))}
             </div>
