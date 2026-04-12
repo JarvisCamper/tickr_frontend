@@ -1,7 +1,9 @@
 "use client";
+/* eslint-disable react-hooks/exhaustive-deps */
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 import { TimeControl } from "./components/TimeControl";
 import { TimeEntriesTable } from "./components/TimeEntriesTable";
 import { ProjectModal } from "./components/ProjectModal";
@@ -11,6 +13,9 @@ import { useToast } from "../../context-and-provider";
 import { useEmployeeRouteGuard } from "@/app/hooks/useEmployeeRouteGuard";
 import { TimeEntry, Project } from "./types";
 import { getApiUrl } from "@/constant/apiendpoints";
+
+const SCREENSHOT_INTERVAL_MS = 10 * 60 * 1000;
+type ScreenshotStatus = "idle" | "requesting" | "active" | "ended" | "unsupported";
 
 export default function TimerPage() {
   const router = useRouter();
@@ -31,9 +36,14 @@ export default function TimerPage() {
   const [newProjectName, setNewProjectName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isActionPending, setIsActionPending] = useState(false);
+  const [screenshotStatus, setScreenshotStatus] = useState<ScreenshotStatus>("idle");
+  const [lastScreenshotAt, setLastScreenshotAt] = useState<string | null>(null);
 
   const initLoadedRef = useRef(false);
-  const autosaveTimeoutRef = useRef<number | null>(null);
+  const captureIntervalRef = useRef<number | null>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
+  const captureVideoRef = useRef<HTMLVideoElement | null>(null);
+  const captureCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const entriesPerPage = 10;
 
@@ -47,6 +57,180 @@ export default function TimerPage() {
     return null;
   };
 
+  const stopMediaStream = (stream?: MediaStream | null) => {
+    stream?.getTracks().forEach((track) => track.stop());
+  };
+
+  const stopScreenshotMonitoring = (stopStream = true) => {
+    if (captureIntervalRef.current) {
+      window.clearInterval(captureIntervalRef.current);
+      captureIntervalRef.current = null;
+    }
+
+    if (stopStream && screenStreamRef.current) {
+      stopMediaStream(screenStreamRef.current);
+      screenStreamRef.current = null;
+    }
+
+    if (stopStream) {
+      captureVideoRef.current = null;
+      captureCanvasRef.current = null;
+      setScreenshotStatus("idle");
+    }
+  };
+
+  const ensureCaptureVideoReady = async (stream: MediaStream) => {
+    let video = captureVideoRef.current;
+    if (!video) {
+      video = document.createElement("video");
+      video.muted = true;
+      video.playsInline = true;
+      captureVideoRef.current = video;
+    }
+
+    video.srcObject = stream;
+
+    await new Promise<void>((resolve) => {
+      if (video!.readyState >= 1) {
+        resolve();
+        return;
+      }
+
+      video!.onloadedmetadata = () => resolve();
+    });
+
+    await video.play().catch(() => undefined);
+  };
+
+  const uploadScreenshot = async (entryId: number) => {
+    const video = captureVideoRef.current;
+    const stream = screenStreamRef.current;
+    if (!video || !stream) return;
+
+    const track = stream.getVideoTracks()[0];
+    if (!track) return;
+
+    let canvas = captureCanvasRef.current;
+    if (!canvas) {
+      canvas = document.createElement("canvas");
+      captureCanvasRef.current = canvas;
+    }
+
+    const settings = track.getSettings();
+    canvas.width = Math.max(1, settings.width || video.videoWidth || 1280);
+    canvas.height = Math.max(1, settings.height || video.videoHeight || 720);
+
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas!.toBlob((generatedBlob) => resolve(generatedBlob), "image/jpeg", 0.86);
+    });
+
+    if (!blob) return;
+
+    const token = Cookies.get("access_token");
+    if (!token) return;
+
+    const formData = new FormData();
+    formData.append("time_entry", String(entryId));
+    formData.append("capture_source", "screen-share");
+    formData.append("image", blob, `screenshot-${Date.now()}.jpg`);
+
+    const response = await fetch(getApiUrl("/api/screenshots/"), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      credentials: "include",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      throw new Error(errorText || "Failed to upload screenshot");
+    }
+
+    setLastScreenshotAt(new Date().toLocaleString());
+  };
+
+  const beginScreenshotMonitoring = async (stream: MediaStream, entryId: number) => {
+    screenStreamRef.current = stream;
+    await ensureCaptureVideoReady(stream);
+    setScreenshotStatus("active");
+
+    stream.getVideoTracks().forEach((track) => {
+      track.addEventListener("ended", () => {
+        stopScreenshotMonitoring(false);
+        screenStreamRef.current = null;
+        captureVideoRef.current = null;
+        captureCanvasRef.current = null;
+        void forceStopTimerAfterScreenShareEnded();
+      });
+    });
+
+    await uploadScreenshot(entryId);
+
+    captureIntervalRef.current = window.setInterval(() => {
+      void uploadScreenshot(entryId).catch((error) => {
+        console.error("Screenshot upload failed:", error);
+      });
+    }, SCREENSHOT_INTERVAL_MS);
+  };
+
+  const requestScreenShare = async () => {
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      setScreenshotStatus("unsupported");
+      throw new Error("This browser does not support screen sharing for screenshot capture.");
+    }
+
+    setScreenshotStatus("requesting");
+    return navigator.mediaDevices.getDisplayMedia({
+      video: true,
+      audio: false,
+    });
+  };
+
+  const enableScreenshotsForActiveEntry = async (entryId: number) => {
+    const stream = await requestScreenShare();
+    try {
+      await beginScreenshotMonitoring(stream, entryId);
+      showToast("Screenshot monitoring is active for this timer session.", "success");
+    } catch (error) {
+      stopMediaStream(stream);
+      setScreenshotStatus("ended");
+      throw error;
+    }
+  };
+
+  const forceStopTimerAfterScreenShareEnded = async () => {
+    try {
+      const response = await fetch(getApiUrl("/api/entries/stop/"), {
+        method: "POST",
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "");
+        throw new Error(errorText || "Failed to stop timer after screen sharing ended.");
+      }
+    } catch (error) {
+      console.error("Auto-stop timer after screen share end failed:", error);
+    } finally {
+      stopTimer();
+      setActiveEntryId(null);
+      setDescription("");
+      setSelectedProjectId(null);
+      setLastScreenshotAt(null);
+      setScreenshotStatus("ended");
+      void fetchTimeEntries();
+      showToast("Screen sharing stopped, so the running timer was ended automatically.", "error");
+    }
+  };
+
   useEffect(() => {
     if (!isEmployeeAllowed || initLoadedRef.current) return;
     initLoadedRef.current = true;
@@ -56,9 +240,7 @@ export default function TimerPage() {
 
   useEffect(() => {
     return () => {
-      if (autosaveTimeoutRef.current !== null) {
-        window.clearTimeout(autosaveTimeoutRef.current);
-      }
+      stopScreenshotMonitoring();
     };
   }, []);
 
@@ -75,6 +257,7 @@ export default function TimerPage() {
           setDescription(data.description);
           setSelectedProjectId(getProjectId(data));
           setActiveEntryId(data.id || null);
+          setScreenshotStatus("ended");
 
           if (data.started_at) {
             startTimer(data.started_at);
@@ -90,22 +273,14 @@ export default function TimerPage() {
     }
   };
 
-  const scheduleActiveEntrySync = (
-    nextDescription: string,
-    nextProjectId: number | null
-  ) => {
+  useEffect(() => {
     if (!isRunning || !activeEntryId) return;
 
-    if (autosaveTimeoutRef.current !== null) {
-      window.clearTimeout(autosaveTimeoutRef.current);
-    }
-
-    autosaveTimeoutRef.current = window.setTimeout(async () => {
+    const timeoutId = window.setTimeout(async () => {
       try {
-        const payload: Record<string, unknown> = {
-          description: nextDescription,
-          project: nextProjectId,
-        };
+        const payload: Record<string, unknown> = {};
+        if (description !== undefined) payload.description = description;
+        if (selectedProjectId !== undefined) payload.project = selectedProjectId;
 
         await fetch(getApiUrl(`/api/entries/${activeEntryId}/`), {
           method: "PATCH",
@@ -117,17 +292,9 @@ export default function TimerPage() {
         console.error("Failed to update active entry:", error);
       }
     }, 1000);
-  };
 
-  const handleDescriptionChange = (nextDescription: string) => {
-    setDescription(nextDescription);
-    scheduleActiveEntrySync(nextDescription, selectedProjectId);
-  };
-
-  const handleProjectChange = (nextProjectId: number | null) => {
-    setSelectedProjectId(nextProjectId);
-    scheduleActiveEntrySync(description, nextProjectId);
-  };
+    return () => window.clearTimeout(timeoutId);
+  }, [description, selectedProjectId, isRunning, activeEntryId]);
 
   const fetchProjects = async () => {
     try {
@@ -176,9 +343,17 @@ export default function TimerPage() {
       return;
     }
 
+    const confirmed = window.confirm(
+      "Starting a tracked session will request screen sharing, take one screenshot immediately, and continue every 10 minutes while the timer is running. Continue?"
+    );
+    if (!confirmed) return;
+
     setIsActionPending(true);
+    let pendingStream: MediaStream | null = null;
 
     try {
+      pendingStream = await requestScreenShare();
+
       const payload: Record<string, unknown> = {
         description: description.trim(),
       };
@@ -199,7 +374,10 @@ export default function TimerPage() {
         const serverStart = data?.started_at || data?.start_time;
         startTimer(serverStart);
 
+        let resolvedEntryId: number | null = null;
+
         if (data?.id) {
+          resolvedEntryId = data.id;
           setActiveEntryId(data.id);
         } else {
           try {
@@ -211,6 +389,7 @@ export default function TimerPage() {
               const activeData = await activeResponse.json().catch(() => null);
               if (activeData) {
                 if (activeData.id) {
+                  resolvedEntryId = activeData.id;
                   setActiveEntryId(activeData.id);
                 }
                 const restoredStart = activeData.started_at || activeData.start_time;
@@ -221,14 +400,37 @@ export default function TimerPage() {
             console.error("Failed to reload active entry after start:", error);
           }
         }
-        showToast("Timer started successfully!", "success");
+
+        if (pendingStream && resolvedEntryId) {
+          await beginScreenshotMonitoring(pendingStream, resolvedEntryId);
+          pendingStream = null;
+          showToast("Timer started and screenshot monitoring is active!", "success");
+        } else {
+          if (pendingStream) {
+            stopMediaStream(pendingStream);
+            pendingStream = null;
+          }
+          setScreenshotStatus("ended");
+          showToast(
+            "Timer started, but screenshot monitoring could not be attached to the active entry.",
+            "error"
+          );
+        }
       } else {
+        if (pendingStream) {
+          stopMediaStream(pendingStream);
+          pendingStream = null;
+        }
         console.error("Start timer error:", data);
         showToast(data?.detail || "Failed to start timer", "error");
       }
     } catch (error) {
+      if (pendingStream) {
+        stopMediaStream(pendingStream);
+      }
       console.error("Error starting timer:", error);
       showToast(error instanceof Error ? error.message : "Error starting timer", "error");
+      setScreenshotStatus("ended");
     } finally {
       setIsActionPending(false);
     }
@@ -239,6 +441,8 @@ export default function TimerPage() {
     setIsActionPending(true);
 
     try {
+      stopScreenshotMonitoring();
+
       const response = await fetch(getApiUrl("/api/entries/stop/"), {
         method: "POST",
         headers: getAuthHeaders(),
@@ -250,6 +454,7 @@ export default function TimerPage() {
         setActiveEntryId(null);
         setDescription("");
         setSelectedProjectId(null);
+        setLastScreenshotAt(null);
         void fetchTimeEntries();
         showToast("Timer stopped and saved!", "success");
       } else {
@@ -262,6 +467,20 @@ export default function TimerPage() {
       showToast("Error stopping timer", "error");
     } finally {
       setIsActionPending(false);
+    }
+  };
+
+  const handleEnableScreenshots = async () => {
+    if (!activeEntryId) {
+      showToast("Start a timer before enabling screenshots.", "error");
+      return;
+    }
+
+    try {
+      await enableScreenshotsForActiveEntry(activeEntryId);
+    } catch (error) {
+      console.error("Enable screenshots error:", error);
+      showToast(error instanceof Error ? error.message : "Failed to enable screenshots", "error");
     }
   };
 
@@ -307,7 +526,8 @@ export default function TimerPage() {
 
   const handleEdit = async (entry: TimeEntry) => {
     try {
-      const entryProjectId = (entry as any).project?.id ?? (entry as any).project ?? (entry as any).project_id ?? null;
+      const entryProjectId =
+        (entry as any).project?.id ?? (entry as any).project ?? (entry as any).project_id ?? null;
       if (entryProjectId && !projects.some((project) => project.id === entryProjectId)) {
         await fetchProjects();
       }
@@ -415,18 +635,21 @@ export default function TimerPage() {
         <div className="mt-8 space-y-8">
           <TimeControl
             description={description}
-            onDescriptionChange={handleDescriptionChange}
+            setDescription={setDescription}
             selectedProjectId={selectedProjectId}
-            onProjectChange={handleProjectChange}
+            setSelectedProjectId={setSelectedProjectId}
             projects={projects}
             time={time}
             formatTime={formatTime}
             isRunning={isRunning}
             isPaused={isPaused}
             isActionPending={isActionPending}
+            screenshotStatus={screenshotStatus}
+            lastScreenshotLabel={lastScreenshotAt}
             onStart={handleStart}
             onStop={handleStop}
             onAddProject={() => setShowProjectModal(true)}
+            onEnableScreenshots={handleEnableScreenshots}
           />
 
           <TimeEntriesTable

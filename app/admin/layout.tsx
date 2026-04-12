@@ -63,13 +63,28 @@ export default function AdminLayout({
 
   return (
     <div className="admin-shell flex">
-      <Sidebar isOpen={sidebarOpen} />
+      {sidebarOpen ? (
+        <button
+          type="button"
+          aria-label="Close sidebar overlay"
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[2px] md:hidden"
+        />
+      ) : null}
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => {
+          if (typeof window !== "undefined" && window.innerWidth < 768) {
+            setSidebarOpen(false);
+          }
+        }}
+      />
       <div className="flex-1 flex flex-col">
         <AdminHeader
           sidebarOpen={sidebarOpen}
           onToggleSidebar={() => setSidebarOpen((current) => !current)}
         />
-        <main className="flex-1 overflow-auto px-4 pb-6 pt-3 md:px-6 md:pb-8 md:pt-4">
+        <main className="flex-1 overflow-auto px-3 pb-6 pt-3 sm:px-4 md:px-6 md:pb-8 md:pt-4">
           <div className="mx-auto flex min-h-full max-w-7xl flex-col">
             <div className="flex-1">{children}</div>
             <AdminFooter />

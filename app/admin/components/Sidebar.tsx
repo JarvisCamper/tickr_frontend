@@ -9,6 +9,7 @@ import {
   UsersRound,
   FolderKanban,
   Timer,
+  Camera,
   ChartColumn,
   Settings,
   LogOut,
@@ -20,14 +21,17 @@ const menuItems = [
   { label: "Teams", href: "/admin/teams", icon: UsersRound },
   { label: "Projects", href: "/admin/projects", icon: FolderKanban },
   { label: "Time Entries", href: "/admin/time-entries", icon: Timer },
+  { label: "Screenshots", href: "/admin/screenshots", icon: Camera },
   { label: "Analytics", href: "/admin/analytics", icon: ChartColumn },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
 export function Sidebar({
   isOpen,
+  onClose,
 }: {
   isOpen: boolean;
+  onClose?: () => void;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -55,8 +59,10 @@ export function Sidebar({
 
   return (
     <aside
-      className={`admin-sidebar sticky top-0 h-screen overflow-y-auto text-white transition-[width,opacity] duration-300 ${
-        isOpen ? "w-80 opacity-100" : "w-0 opacity-0 pointer-events-none"
+      className={`admin-sidebar fixed inset-y-0 left-0 z-50 h-screen overflow-y-auto text-white transition-[transform,opacity,width] duration-300 md:sticky md:top-0 ${
+        isOpen
+          ? "w-[19rem] translate-x-0 opacity-100"
+          : "pointer-events-none w-[19rem] -translate-x-full opacity-0 md:w-0 md:translate-x-0"
       }`}
     >
       <div className="flex min-h-full flex-col">
@@ -88,6 +94,7 @@ export function Sidebar({
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onClose}
                 className={`flex items-center gap-3 rounded-2xl px-4 py-3 transition-all ${
                   isActive
                     ? "border border-cyan-400/30 bg-linear-to-r from-cyan-400/20 to-sky-400/12 text-white shadow-lg shadow-cyan-950/10"
