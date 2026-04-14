@@ -6,5 +6,5 @@ export default function ReportsPage() {
 }
 
 export const metadata: Metadata = {
-  title: 'Reports',
+  title: 'tickr',
 };

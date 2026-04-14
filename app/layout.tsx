@@ -1,4 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata } from "next";
 import "./globals.css";
 import LayoutFrame from "./components/LayoutFrame";
 import { Providers } from "../context-and-provider/Providers";
@@ -13,6 +14,10 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+export const metadata: Metadata = {
+  title: "tickr",
+};
 
 export default function RootLayout({
   children,

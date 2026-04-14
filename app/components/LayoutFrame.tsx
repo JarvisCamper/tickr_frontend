@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Navbar from "./navbar";
 import Footer from "./footer";
@@ -11,6 +12,10 @@ export default function LayoutFrame({
 }) {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith("/admin");
+
+  useEffect(() => {
+    document.title = "tickr";
+  }, [pathname]);
 
   return (
     <>
