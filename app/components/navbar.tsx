@@ -7,13 +7,11 @@ import Cookies from 'js-cookie';
 import { useAuth } from '@/context-and-provider/AuthContext';
 import { Bell, BriefcaseBusiness, ChartColumnBig, Clock3, Menu, UserRound, Users, X } from 'lucide-react';
 
-// Type definitions
 interface NavLink {
   name: string;
   href: string;
 }
 
-// Constants
 const AUTHENTICATED_LINKS: NavLink[] = [
   { name: 'Timer', href: '/timer' },
   { name: 'Projects', href: '/projects' },
@@ -39,9 +37,6 @@ export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  /**
-   * Handle user logout
-   */
   const handleLogout = async () => {
     try {
       const token = Cookies.get('access_token');
@@ -62,16 +57,13 @@ export default function Navbar() {
     router.replace('/login');
   };
 
-  // Hide navbar on admin routes - check AFTER hooks
   if (pathname.startsWith('/admin')) {
     return null;
   }
 
-  // Render 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 px-3 pt-3 sm:px-6">
       <div className="mx-auto flex max-w-7xl items-center justify-between rounded-[1.6rem] border border-white/70 bg-white/82 px-4 py-3 shadow-[0_18px_40px_rgba(15,23,42,0.12)] backdrop-blur-xl sm:px-6">
-        {/* Logo */}
         <Link href="/" className="flex items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-linear-to-br from-blue-700 via-blue-600 to-teal-500 text-base font-black text-white shadow-lg shadow-blue-900/20">
             T
@@ -82,7 +74,6 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* Mobile Menu Toggle */}
         <button
           className="inline-flex rounded-2xl border border-slate-200 bg-slate-50 p-2 text-slate-700 transition hover:bg-slate-100 md:hidden"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -91,7 +82,6 @@ export default function Navbar() {
           {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
 
-        {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-3">
           {isAuthenticated ? (
             <>
@@ -164,7 +154,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
       {isMenuOpen && (
         <div className="mx-auto mt-3 max-w-7xl rounded-[1.6rem] border border-white/70 bg-white/92 p-4 shadow-[0_18px_40px_rgba(15,23,42,0.12)] backdrop-blur-xl md:hidden">
           {isAuthenticated ? (

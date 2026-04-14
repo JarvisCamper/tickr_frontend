@@ -77,7 +77,6 @@ function LoginForm() {
   }, [normalizeRedirectTarget, searchParams]);
 
   useEffect(() => {
-    // If already authenticated on page load, redirect
     if (isAuthenticated && user) {
       const userData = user as any;
       const isAdmin = userData.is_admin || userData.is_staff || userData.is_superuser || userData.role === 'admin';
@@ -94,7 +93,6 @@ function LoginForm() {
     setIsLoading(true);
 
     try {
-      // response from POST /api/login/
       const result = await apiLogin({ email, password });
       const data = result.data as any;
 
@@ -103,11 +101,9 @@ function LoginForm() {
         return;
       }
 
-      // Save tokens client-side
       localStorage.setItem("access", data.access);
       localStorage.setItem("refresh", data.refresh);
 
-      // Keep existing app auth flow in sync (cookies + context)
       login(data.access, data.refresh, data.user as any);
       window.dispatchEvent(new Event("auth-changed"));
 
@@ -125,7 +121,6 @@ function LoginForm() {
       router.replace(redirectTarget);
 
     } catch (err: any) {
-      // Parse and show user-friendly error messages
       let errorMessage = "Login failed. Please try again.";
       
       if (typeof err === "string") {
@@ -140,7 +135,6 @@ function LoginForm() {
       } else if (err instanceof Error) {
         errorMessage = err.message;
       } else if (err && typeof err === "object") {
-        // Handle common error formats from API
         if (err.detail) {
           errorMessage = mapAuthError(err.detail);
         } else if (err.message) {

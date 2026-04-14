@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef, useMemo, useLayoutEffect } from 'react';
-import Image from 'next/image'; // Import Next.js Image for optimization
+import Image from 'next/image';
 
 interface ImageSliderProps {
   images: string[];
@@ -9,18 +9,14 @@ interface ImageSliderProps {
 
 export default function ImageSlider({ images, intervalMs = 6000 }: ImageSliderProps) {
   const [index, setIndex] = useState(0);
-  // Derive currentSrcs from images using useMemo to avoid synchronous setState in effects
   const currentSrcs = useMemo(
     () => images.map((s) => encodeURI(s)),
     [images]
   );
   const timerRef = useRef<number | null>(null);
 
-  // Use useLayoutEffect for synchronous updates during init/sync (avoids cascading renders)
   useLayoutEffect(() => {
     if (!images || images.length === 0) return;
-
-    // Debug log (no setState needed here since currentSrcs is memoized)
     console.debug('ImageSlider: initial srcs', currentSrcs);
 
     timerRef.current = window.setInterval(() => {
@@ -30,7 +26,7 @@ export default function ImageSlider({ images, intervalMs = 6000 }: ImageSliderPr
     return () => {
       if (timerRef.current) window.clearInterval(timerRef.current);
     };
-  }, [currentSrcs, intervalMs]); // Depend on currentSrcs to reset if images change
+  }, [currentSrcs, intervalMs]);
 
   const goTo = (i: number) => {
     setIndex(i % images.length);
@@ -41,9 +37,6 @@ export default function ImageSlider({ images, intervalMs = 6000 }: ImageSliderPr
   };
 
   const tryAlternatives = (original: string, attempt: number): string => {
-    // attempt 0: encoded original (already used)
-    // attempt 1: replace spaces with hyphens
-    // attempt 2: replace spaces with hyphens and lowercase
     if (attempt === 0) return encodeURI(original);
     if (attempt === 1) return encodeURI(original.replace(/\s+/g, '-'));
     if (attempt === 2) return encodeURI(original.replace(/\s+/g, '-').toLowerCase());
@@ -51,17 +44,7 @@ export default function ImageSlider({ images, intervalMs = 6000 }: ImageSliderPr
   };
 
   const handleImageError = (idx: number) => {
-    // Since currentSrcs is now read-only (memoized), we can't mutate it directly.
-    // Instead, track failed images separately and fallback per-image.
-    // For simplicity, we'll use a state for fallbacks (init with currentSrcs)
-    // Wait, to fix properly: Introduce a fallback state only for errors.
-    // But to keep it minimal, we'll use a Map or array for overrides.
     console.warn(`ImageSlider: failed to load ${currentSrcs[idx]}, trying alternatives for ${images[idx]}`);
-    
-    // For now, log and suggest placeholder—implement full fallback logic if needed
-    // E.g., set to '/file.png' via a separate state, but that would require another useState.
-    // Quick fix: Since errors are per-image, you could add a useState<string[]> for overrides, init to [].
-    // But to resolve the error without major refactor: Just log for now, or use a static fallback.
   };
 
   if (!images || images.length === 0) {
@@ -74,12 +57,12 @@ export default function ImageSlider({ images, intervalMs = 6000 }: ImageSliderPr
         <Image
           key={src + i}
           src={currentSrcs[i]}
-          alt={`Slide ${i + 1}: ${src}`} // Descriptive alt for accessibility
+          alt={`Slide ${i + 1}: ${src}`}
           onError={() => handleImageError(i)}
-          fill // Use fill for responsive full coverage
+          fill
           className={`object-cover transition-opacity duration-700 ${i === index ? 'opacity-100' : 'opacity-0'}`}
-          sizes="(max-width: 768px) 100vw, 50vw" // Responsive sizes for optimization
-          priority={i === 0} // Prioritize first image for LCP
+          sizes="(max-width: 768px) 100vw, 50vw"
+          priority={i === 0}
         />
       ))}
 

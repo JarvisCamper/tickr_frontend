@@ -14,12 +14,9 @@ const landingImages = [
 export default function Hero() {
   return (
     <>
-      {/* Two-column Hero: Timer (left) and Slider (right) */}
       <section className="bg-white py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-[1fr,2fr] gap-8 items-center">
-
-            {/* Left: Welcome copy + CTA */}
             <div className="flex items-center justify-center">
               <div className="w-full max-w-sm text-left">
                 <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-6">Welcome to Tickr</h1>
@@ -42,8 +39,6 @@ export default function Hero() {
                 </Link>
               </div>
             </div>
-
-            {/* Right: Image slider */}
             <div className="flex items-center justify-center">
               <div className="w-full max-w-4xl rounded-lg shadow-xl overflow-hidden">
                 <div className="relative pt-[56.25%]">
@@ -56,12 +51,10 @@ export default function Hero() {
 
           </div>
 
-          {/* Caption below both columns */}
           <div className="mt-8 text-center">
             <h2 className="text-3xl font-bold text-gray-900">Start time tracking with <span className="text-emerald-600">Tickr</span></h2>
           </div>
 
-          {/* Added Features Section */}
           <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center p-6 bg-gray-50 rounded-lg">
               <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -87,7 +80,6 @@ export default function Hero() {
           </div>
         </div>
       </section>
-      {/* CTA Section */}
       <section className="bg-white py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto text-center">
           <div className="text-lg text-gray-600 mb-8">

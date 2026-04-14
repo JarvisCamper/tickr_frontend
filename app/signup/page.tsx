@@ -1,4 +1,3 @@
-// src/app/signup/page.tsx
 "use client";
 
 import { useState, FormEvent, Suspense } from "react";
@@ -52,7 +51,6 @@ function SignupForm() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Your existing beautiful JSX — unchanged */}
       <header className="bg-gray-100 py-12 px-6">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900">Sign up</h1>
@@ -69,7 +67,6 @@ function SignupForm() {
               </div>
             )}
 
-            {/* All your input fields — keep exactly as they are */}
             <div className="mb-6">
               <label htmlFor="username" className="block text-sm font-medium text-gray-900 mb-2">Username</label>
               <input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)}
