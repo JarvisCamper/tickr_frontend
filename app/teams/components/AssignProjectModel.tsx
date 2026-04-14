@@ -26,7 +26,7 @@ export function AssignProjectModal({
 
   const assignableProjects = projects.filter((project) => {
     const assignedTeamId = project.team?.id ?? project.team_id;
-    return !assignedTeamId;
+    return !assignedTeamId && project.type === "group";
   });
   const totalPages = Math.max(1, Math.ceil(assignableProjects.length / PROJECTS_PER_PAGE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
