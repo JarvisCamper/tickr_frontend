@@ -6,6 +6,25 @@ import Link from "next/link";
 import { useAuth } from "../../context-and-provider/AuthContext";
 import { apiLogin } from "../api/auth/login";
 
+const LEGACY_REDIRECT_MAP: Record<string, string> = {
+  "/employee": "/timer",
+};
+
+const ALLOWED_REDIRECT_PREFIXES = [
+  "/admin",
+  "/timer",
+  "/projects",
+  "/teams",
+  "/reports",
+  "/profile",
+  "/features",
+  "/contact",
+  "/pnp",
+  "/tns",
+  "/login",
+  "/signup",
+] as const;
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -32,9 +51,7 @@ function LoginForm() {
     return detail;
   };
 
-  const getRedirectTarget = useCallback(() => {
-    const redirect = searchParams.get("redirect");
-
+  const normalizeRedirectTarget = useCallback((redirect?: string | null) => {
     if (!redirect || !redirect.startsWith("/")) {
       return null;
     }
@@ -43,8 +60,21 @@ function LoginForm() {
       return null;
     }
 
-    return redirect;
-  }, [searchParams]);
+    const normalizedPath = LEGACY_REDIRECT_MAP[redirect] || redirect;
+    const isAllowed = ALLOWED_REDIRECT_PREFIXES.some(
+      (prefix) => normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`)
+    );
+
+    if (!isAllowed) {
+      return null;
+    }
+
+    return normalizedPath;
+  }, []);
+
+  const getRedirectTarget = useCallback(() => {
+    return normalizeRedirectTarget(searchParams.get("redirect"));
+  }, [normalizeRedirectTarget, searchParams]);
 
   useEffect(() => {
     // If already authenticated on page load, redirect
@@ -81,8 +111,11 @@ function LoginForm() {
       login(data.access, data.refresh, data.user as any);
       window.dispatchEvent(new Event("auth-changed"));
 
-      const redirectTarget = getRedirectTarget();
-      router.replace(redirectTarget || data.redirect_url || "/timer");
+      const redirectTarget =
+        getRedirectTarget() ||
+        normalizeRedirectTarget(data.redirect_url) ||
+        "/timer";
+      router.replace(redirectTarget);
 
     } catch (err: any) {
       // Parse and show user-friendly error messages

@@ -4,6 +4,12 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+const FOOTER_LINKS = [
+  { href: '/pnp', label: 'Privacy Policy' },
+  { href: '/tns', label: 'Terms of Service' },
+  { href: '/contact', label: 'Contact' },
+] as const;
+
 export default function Footer() {
   const pathname = usePathname();
 
@@ -23,9 +29,16 @@ export default function Footer() {
             </div>
           </div>
           <div className="flex flex-wrap gap-5 text-sm text-slate-300">
-            <Link href="/pnp" className="transition hover:text-white">Privacy Policy</Link>
-            <Link href="/tns" className="transition hover:text-white">Terms of Service</Link>
-            <Link href="/contact" className="transition hover:text-white">Contact</Link>
+            {FOOTER_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                prefetch={false}
+                className="transition hover:text-white"
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
         </div>
       </div>
