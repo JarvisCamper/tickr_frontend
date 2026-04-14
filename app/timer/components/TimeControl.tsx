@@ -55,7 +55,7 @@ export function TimeControl({
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Track work with less friction</h2>
           <p className="mt-1 text-sm text-slate-600">Capture what you are doing, connect it to a project, and keep the timer in sync.</p>
         </div>
-        <div className="rounded-[1.5rem] bg-slate-950 px-6 py-4 text-center text-white shadow-lg shadow-slate-900/10">
+        <div className="rounded-3xl bg-slate-950 px-6 py-4 text-center text-white shadow-lg shadow-slate-900/10">
           <div className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-300">Elapsed</div>
           <div className="mt-2 min-w-[150px] text-3xl font-semibold tracking-[0.18em] text-white">
             {formatTime(time)}
@@ -92,7 +92,7 @@ export function TimeControl({
             </select>
             <button
               onClick={onAddProject}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex h-[50px] items-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               New
             </button>
@@ -104,7 +104,7 @@ export function TimeControl({
             <button
               onClick={onStart}
               disabled={isActionPending}
-              className="w-full rounded-2xl bg-teal-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-teal-300 lg:w-auto"
+              className="inline-flex h-[50px] w-full items-center justify-center rounded-2xl bg-teal-600 px-6 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-teal-300 lg:w-auto"
             >
               Start timer
             </button>
@@ -112,7 +112,7 @@ export function TimeControl({
             <button
               onClick={onStop}
               disabled={isActionPending}
-              className="w-full rounded-2xl bg-rose-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-300 lg:w-auto"
+              className="inline-flex h-[50px] w-full items-center justify-center rounded-2xl bg-rose-600 px-6 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-300 lg:w-auto"
             >
               Stop and save
             </button>
