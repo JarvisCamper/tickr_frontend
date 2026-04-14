@@ -31,6 +31,19 @@ const formatDateTime = (value?: string | null) => {
   return parsed.toLocaleString();
 };
 
+const isSameLocalDay = (value?: string | null, referenceDate = new Date()) => {
+  if (!value) return false;
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return false;
+
+  return (
+    parsed.getFullYear() === referenceDate.getFullYear() &&
+    parsed.getMonth() === referenceDate.getMonth() &&
+    parsed.getDate() === referenceDate.getDate()
+  );
+};
+
 const resolveScreenshotUrl = (value?: string | null) => {
   if (!value) return null;
 
@@ -194,8 +207,7 @@ export default function AdminScreenshotsPage() {
     const uniqueUsers = new Set(
       allScreenshots.map((item) => item.user_email || item.username || `user-${item.id}`)
     ).size;
-    const today = new Date().toISOString().slice(0, 10);
-    const todayCount = allScreenshots.filter((item) => (item.captured_at || "").slice(0, 10) === today).length;
+    const todayCount = allScreenshots.filter((item) => isSameLocalDay(item.captured_at)).length;
 
     return {
       total: allScreenshots.length,
