@@ -111,10 +111,17 @@ function LoginForm() {
       login(data.access, data.refresh, data.user as any);
       window.dispatchEvent(new Event("auth-changed"));
 
+      const loggedInUser = data.user as any;
+      const isAdmin =
+        loggedInUser?.is_admin ||
+        loggedInUser?.is_staff ||
+        loggedInUser?.is_superuser ||
+        loggedInUser?.role === "admin";
+
       const redirectTarget =
         getRedirectTarget() ||
         normalizeRedirectTarget(data.redirect_url) ||
-        "/timer";
+        (isAdmin ? "/admin" : "/timer");
       router.replace(redirectTarget);
 
     } catch (err: any) {

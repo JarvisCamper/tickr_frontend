@@ -1,37 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useAuth } from "@/context-and-provider/AuthContext";
+import { useMemo } from "react";
+import { useAuth, isAdminUser } from "@/context-and-provider/AuthContext";
 import Cookies from "js-cookie";
 
 export function useAdminAuth() {
   const { user, isAuthenticated, isLoading } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [finalLoading, setFinalLoading] = useState(true);
 
-  useEffect(() => {
-    // Wait for auth to be ready
-    if (isLoading) {
-      return;
+  const hasToken = useMemo(() => {
+    if (typeof window === "undefined") {
+      return false;
     }
+    return Boolean(Cookies.get("access_token"));
+  }, []);
 
-    // Check if authenticated
-    if (!isAuthenticated) {
-      setIsAdmin(false);
-      setFinalLoading(false);
-      return;
-    }
-
-    // Check if user has admin flags
-    if (user) {
-      const adminCheck = user.is_admin || user.is_staff || user.is_superuser || user.role === 'admin';
-      setIsAdmin(adminCheck);
-      setFinalLoading(false);
-    } else {
-      // Still waiting for user data
-      setFinalLoading(true);
-    }
-  }, [user, isAuthenticated, isLoading]);
+  const finalLoading = isLoading || (hasToken && isAuthenticated && !user);
+  const isAdmin = isAdminUser(user);
 
   return { isAdmin, isLoading: finalLoading, user };
 }

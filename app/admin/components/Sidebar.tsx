@@ -12,7 +12,11 @@ import {
   Timer,
   Camera,
   ChartColumn,
+  ClipboardList,
   Settings,
+  ShieldCheck,
+  FileText,
+  Mail,
   LogOut,
 } from "lucide-react";
 
@@ -24,7 +28,11 @@ const menuItems = [
   { label: "Time Entries", href: "/admin/time-entries", icon: Timer },
   { label: "Screenshots", href: "/admin/screenshots", icon: Camera },
   { label: "Analytics", href: "/admin/analytics", icon: ChartColumn },
+  { label: "Activity Logs", href: "/admin/activity-logs", icon: ClipboardList },
   { label: "Settings", href: "/admin/settings", icon: Settings },
+  { label: "Privacy Policy", href: "/admin/privacy-policy", icon: ShieldCheck },
+  { label: "Terms", href: "/admin/terms", icon: FileText },
+  { label: "Contact", href: "/admin/contact", icon: Mail },
 ];
 
 export function Sidebar({

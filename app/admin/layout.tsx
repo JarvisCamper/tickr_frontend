@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useAdminAuth } from "./hooks/useAdminAuth";
 import { Sidebar } from "./components/Sidebar";
 import { AdminHeader } from "./components/AdminHeader";
@@ -14,30 +14,26 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { isAdmin, isLoading } = useAdminAuth();
-  const hasCheckedRef = useRef(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
-    if (!isLoading && !hasCheckedRef.current) {
-      hasCheckedRef.current = true;
-      
-      // Check if user has token and admin status
-      const token = Cookies.get('access_token');
-      
-      // If no token, redirect to login
-      if (!token) {
-        router.push("/login");
-        return;
-      }
-      
-      // If token exists but user is not admin, redirect to regular dashboard
-      if (!isAdmin) {
-        router.push("/timer");
-        return;
-      }
+    if (isLoading) {
+      return;
     }
-  }, [isAdmin, isLoading, router]);
+
+    const token = Cookies.get("access_token");
+
+    if (!token) {
+      router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+      return;
+    }
+
+    if (!isAdmin) {
+      router.replace("/timer");
+    }
+  }, [isAdmin, isLoading, pathname, router]);
 
   if (isLoading) {
     return (
