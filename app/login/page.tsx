@@ -15,7 +15,22 @@ function LoginForm() {
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
+
+  const mapAuthError = (detail?: string) => {
+    if (!detail) {
+      return "Login failed. Please try again.";
+    }
+
+    const normalized = detail.trim().toLowerCase();
+    if (
+      normalized === "invalid credentials" ||
+      normalized === "no active account found with the given credentials"
+    ) {
+      return "Invalid email or password. Please check your credentials.";
+    }
+
+    return detail;
+  };
 
   const getRedirectTarget = useCallback(() => {
     const redirect = searchParams.get("redirect");
@@ -52,10 +67,9 @@ function LoginForm() {
       // response from POST /api/login/
       const result = await apiLogin({ email, password });
       const data = result.data as any;
-      setDebugInfo(data);
 
       if (!result.ok) {
-        setError(data.detail || "Login failed");
+        setError(mapAuthError(data.detail));
         return;
       }
 
@@ -78,9 +92,7 @@ function LoginForm() {
         try {
           const parsed = JSON.parse(err);
           if (parsed.detail) {
-            errorMessage = parsed.detail === "No active account found with the given credentials"
-              ? "Invalid email or password. Please check your credentials."
-              : parsed.detail;
+            errorMessage = mapAuthError(parsed.detail);
           }
         } catch {
           errorMessage = err;
@@ -90,9 +102,7 @@ function LoginForm() {
       } else if (err && typeof err === "object") {
         // Handle common error formats from API
         if (err.detail) {
-          errorMessage = err.detail === "No active account found with the given credentials"
-            ? "Invalid email or password. Please check your credentials."
-            : err.detail;
+          errorMessage = mapAuthError(err.detail);
         } else if (err.message) {
           errorMessage = err.message;
         } else if (err.error) {
@@ -101,7 +111,6 @@ function LoginForm() {
       }
       
       setError(errorMessage);
-      setDebugInfo(null);
     } finally {
       setIsLoading(false);
     }
@@ -192,13 +201,6 @@ function LoginForm() {
               </div>
             </form>
 
-            {/* Debug panel (visible when debugInfo exists) */}
-            {debugInfo && (
-              <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded text-xs text-gray-700">
-                <div className="font-medium mb-1">Debug (raw auth response)</div>
-                <pre className="whitespace-pre-wrap">{JSON.stringify(debugInfo, null, 2)}</pre>
-              </div>
-            )}
           </div>
         </div>
       </div>
