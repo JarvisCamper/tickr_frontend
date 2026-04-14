@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-
 export function AdminFooter() {
   return (
     <footer className="mt-auto px-1 pb-2 pt-8">
@@ -13,11 +11,7 @@ export function AdminFooter() {
               © 2026 Tickr. Secure administration, oversight, and reporting.
             </div>
           </div>
-          <div className="flex flex-wrap gap-5 text-sm text-slate-300">
-            <Link href="/admin/privacy-policy" className="transition hover:text-white">Privacy Policy</Link>
-            <Link href="/admin/terms" className="transition hover:text-white">Terms of Service</Link>
-            <Link href="/admin/contact" className="transition hover:text-white">Contact</Link>
-          </div>
+          <div className="text-sm text-slate-300">Admin tools only</div>
         </div>
       </div>
     </footer>

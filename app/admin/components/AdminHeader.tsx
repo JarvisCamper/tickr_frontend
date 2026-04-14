@@ -14,9 +14,6 @@ const titleMap: Record<string, { title: string; subtitle: string }> = {
   "/admin/analytics": { title: "Analytics", subtitle: "Growth and activity insights" },
   "/admin/activity-logs": { title: "Activity Logs", subtitle: "Audit events and actions" },
   "/admin/settings": { title: "Settings", subtitle: "Admin configuration and controls" },
-  "/admin/privacy-policy": { title: "Privacy Policy", subtitle: "Review the platform privacy commitments and data handling notes" },
-  "/admin/terms": { title: "Terms of Service", subtitle: "Review the rules, monitoring terms, and legal usage conditions" },
-  "/admin/contact": { title: "Contact", subtitle: "Reach the Tickr team for support, compliance, and operational questions" },
 };
 
 export function AdminHeader({
