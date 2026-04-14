@@ -16,7 +16,6 @@ function SignupForm() {
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   const togglePass = () => setShowPass(!showPass);
 
@@ -34,9 +33,6 @@ function SignupForm() {
     try {
       await apiSignup({ username, email, password, confirmPassword: password2 });
 
-      // clear debug on success
-      setDebugInfo(null);
-
       const redirectTo = searchParams.get("redirect") || "/login";
       router.replace(redirectTo);
     } catch (err: any) {
@@ -49,7 +45,6 @@ function SignupForm() {
           ? JSON.stringify(err)
           : "Something went wrong";
       setError(msg);
-      setDebugInfo(err?.details || err);
     } finally {
       setIsLoading(false);
     }
@@ -125,12 +120,6 @@ function SignupForm() {
             </div>
           </form>
 
-          {debugInfo && (
-            <div className="mt-6 p-3 bg-gray-50 border border-gray-200 rounded text-xs text-gray-700">
-              <div className="font-medium mb-1">Debug (raw auth response)</div>
-              <pre className="whitespace-pre-wrap">{JSON.stringify(debugInfo, null, 2)}</pre>
-            </div>
-          )}
         </div>
       </main>
     </div>
