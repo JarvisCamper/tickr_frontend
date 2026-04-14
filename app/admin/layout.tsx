@@ -51,14 +51,7 @@ export default function AdminLayout({
   }
 
   if (!isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 font-semibold mb-4">Admin access denied</p>
-          <p className="text-gray-600">Redirecting to login...</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (

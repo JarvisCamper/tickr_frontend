@@ -113,6 +113,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     Cookies.remove('refresh_token');
     setUser(null);
     setIsAuthenticated(false);
+    setIsLoading(false);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('auth-changed'));
+    }
   };
 
   // Initialize auth and listen for auth changes

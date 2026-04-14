@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import { useAuth } from "@/context-and-provider/AuthContext";
 import {
   LayoutDashboard,
   Users,
@@ -35,6 +36,7 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { logout } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -52,17 +54,16 @@ export function Sidebar({
       console.error("Logout request failed:", error);
     }
 
-    Cookies.remove("access_token");
-    Cookies.remove("refresh_token");
-    router.push("/login");
+    logout();
+    router.replace("/login");
   };
 
   return (
     <aside
       className={`admin-sidebar fixed inset-y-0 left-0 z-50 h-screen overflow-y-auto text-white transition-[transform,opacity,width] duration-300 md:sticky md:top-0 ${
         isOpen
-          ? "w-[19rem] translate-x-0 opacity-100"
-          : "pointer-events-none w-[19rem] -translate-x-full opacity-0 md:w-0 md:translate-x-0"
+          ? "w-76 translate-x-0 opacity-100"
+          : "pointer-events-none w-76 -translate-x-full opacity-0 md:w-0 md:translate-x-0"
       }`}
     >
       <div className="flex min-h-full flex-col">

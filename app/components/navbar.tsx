@@ -36,7 +36,7 @@ const linkIcons: Record<string, React.ReactNode> = {
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   /**
@@ -58,10 +58,8 @@ export default function Navbar() {
       console.error('Logout request failed:', error);
     }
 
-    Cookies.remove('access_token');
-    Cookies.remove('refresh_token');
-    window.dispatchEvent(new Event('auth-changed'));
-    router.push('/');
+    logout();
+    router.replace('/login');
   };
 
   // Hide navbar on admin routes - check AFTER hooks
