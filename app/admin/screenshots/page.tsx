@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Camera, ImageIcon, RefreshCw, Search, Trash2, Users } from "lucide-react";
 import { getAuthHeaders, safeFetch } from "../utils/apiHelper";
 import { getApiUrl } from "@/constant/apiendpoints";
+import { PaginationControls } from "@/app/components/PaginationControls";
 
 interface ScreenshotItem {
   id: number;
@@ -23,6 +24,9 @@ interface AdminUser {
   username?: string;
   email: string;
 }
+
+const SCREENSHOT_USERS_PER_PAGE = 8;
+const SCREENSHOTS_PER_PAGE = 9;
 
 const formatDateTime = (value?: string | null) => {
   if (!value) return "N/A";
@@ -88,6 +92,8 @@ export default function AdminScreenshotsPage() {
   const [capturedOn, setCapturedOn] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [usersPage, setUsersPage] = useState(1);
+  const [galleryPage, setGalleryPage] = useState(1);
 
   const loadUsers = async () => {
     const data = await safeFetch("/admin/api/users/?page_size=100", { timeoutMs: 12000 });
@@ -203,6 +209,20 @@ export default function AdminScreenshotsPage() {
     [users, selectedUserId]
   );
 
+  const totalUserPages = Math.max(1, Math.ceil(filteredUsers.length / SCREENSHOT_USERS_PER_PAGE));
+  const safeUsersPage = Math.min(usersPage, totalUserPages);
+  const paginatedUsers = useMemo(() => {
+    const startIndex = (safeUsersPage - 1) * SCREENSHOT_USERS_PER_PAGE;
+    return filteredUsers.slice(startIndex, startIndex + SCREENSHOT_USERS_PER_PAGE);
+  }, [filteredUsers, safeUsersPage]);
+
+  const totalGalleryPages = Math.max(1, Math.ceil(galleryScreenshots.length / SCREENSHOTS_PER_PAGE));
+  const safeGalleryPage = Math.min(galleryPage, totalGalleryPages);
+  const paginatedGalleryScreenshots = useMemo(() => {
+    const startIndex = (safeGalleryPage - 1) * SCREENSHOTS_PER_PAGE;
+    return galleryScreenshots.slice(startIndex, startIndex + SCREENSHOTS_PER_PAGE);
+  }, [galleryScreenshots, safeGalleryPage]);
+
   const stats = useMemo(() => {
     const uniqueUsers = new Set(
       allScreenshots.map((item) => item.user_email || item.username || `user-${item.id}`)
@@ -308,7 +328,10 @@ export default function AdminScreenshotsPage() {
               type="text"
               placeholder="Search users..."
               value={userSearch}
-              onChange={(e) => setUserSearch(e.target.value)}
+              onChange={(e) => {
+                setUserSearch(e.target.value);
+                setUsersPage(1);
+              }}
               className="admin-input h-14 rounded-2xl pl-13 pr-4 text-sm"
             />
           </label>
@@ -316,7 +339,10 @@ export default function AdminScreenshotsPage() {
           <div className="mt-5 space-y-2">
             <button
               type="button"
-              onClick={() => setSelectedUserId(null)}
+              onClick={() => {
+                setSelectedUserId(null);
+                setGalleryPage(1);
+              }}
               className={`w-full rounded-[1.4rem] border px-4 py-4 text-left transition ${
                 selectedUserId === null
                   ? "border-cyan-200 bg-cyan-50 text-cyan-800 shadow-sm"
@@ -335,11 +361,14 @@ export default function AdminScreenshotsPage() {
             </button>
 
             <div className="max-h-[560px] space-y-2 overflow-y-auto pr-1">
-              {filteredUsers.map((user) => (
+              {paginatedUsers.map((user) => (
                 <button
                   key={user.id}
                   type="button"
-                  onClick={() => setSelectedUserId(user.id)}
+                  onClick={() => {
+                    setSelectedUserId(user.id);
+                    setGalleryPage(1);
+                  }}
                   className={`w-full rounded-[1.4rem] border px-4 py-4 text-left transition ${
                     selectedUserId === user.id
                       ? "border-cyan-200 bg-cyan-50 text-cyan-800 shadow-sm"
@@ -358,6 +387,15 @@ export default function AdminScreenshotsPage() {
                 </button>
               ))}
             </div>
+
+            <PaginationControls
+              currentPage={safeUsersPage}
+              totalPages={totalUserPages}
+              totalItems={filteredUsers.length}
+              pageSize={SCREENSHOT_USERS_PER_PAGE}
+              onPageChange={setUsersPage}
+              itemLabel="users"
+            />
           </div>
         </aside>
 
@@ -373,7 +411,10 @@ export default function AdminScreenshotsPage() {
                   type="text"
                   placeholder="Search by user, project, or task description..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setGalleryPage(1);
+                  }}
                   className="admin-input h-11 w-full rounded-xl pl-11 pr-4 text-sm"
                 />
               </label>
@@ -382,7 +423,10 @@ export default function AdminScreenshotsPage() {
                 <input
                   type="date"
                   value={capturedOn}
-                  onChange={(e) => setCapturedOn(e.target.value)}
+                  onChange={(e) => {
+                    setCapturedOn(e.target.value);
+                    setGalleryPage(1);
+                  }}
                   className="admin-input h-11 w-full rounded-xl px-4 text-sm"
                 />
               </div>
@@ -418,7 +462,7 @@ export default function AdminScreenshotsPage() {
             </div>
           ) : (
             <div className="grid gap-5 p-5 md:grid-cols-2 2xl:grid-cols-3">
-              {galleryScreenshots.map((item) => (
+              {paginatedGalleryScreenshots.map((item) => (
                 <article key={item.id} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
                   {(() => {
                     const screenshotUrl = resolveScreenshotUrl(item.image_url);
@@ -489,6 +533,15 @@ export default function AdminScreenshotsPage() {
               ))}
             </div>
           )}
+
+          <PaginationControls
+            currentPage={safeGalleryPage}
+            totalPages={totalGalleryPages}
+            totalItems={galleryScreenshots.length}
+            pageSize={SCREENSHOTS_PER_PAGE}
+            onPageChange={setGalleryPage}
+            itemLabel="screenshots"
+          />
         </section>
       </section>
     </div>

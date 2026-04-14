@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Activity, Search, ShieldCheck, Trash2, UserCog } from "lucide-react";
 import { safeFetch } from "../utils/apiHelper";
+import { PaginationControls } from "@/app/components/PaginationControls";
 
 interface ActivityLog {
   id: number;
@@ -58,6 +59,9 @@ const summaryIconMap = {
   activity: <Activity size={20} className="text-amber-700" />,
 };
 
+const ACTIVITY_LOGS_PER_PAGE = 8;
+const ACCESS_EVENTS_PER_PAGE = 8;
+
 function SummaryCard({
   label,
   value,
@@ -89,6 +93,8 @@ export default function ActivityLogsPage() {
   const [error, setError] = useState("");
   const [filterAction, setFilterAction] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [logsPage, setLogsPage] = useState(1);
+  const [accessPage, setAccessPage] = useState(1);
 
   const safeFetchWithTimeout = async (endpoint: string, timeoutMs = 12000) => {
     return await Promise.race([
@@ -213,6 +219,20 @@ export default function ActivityLogsPage() {
     [authEvents, searchTerm]
   );
 
+  const totalLogPages = Math.max(1, Math.ceil(filteredLogs.length / ACTIVITY_LOGS_PER_PAGE));
+  const safeLogsPage = Math.min(logsPage, totalLogPages);
+  const paginatedLogs = useMemo(() => {
+    const startIndex = (safeLogsPage - 1) * ACTIVITY_LOGS_PER_PAGE;
+    return filteredLogs.slice(startIndex, startIndex + ACTIVITY_LOGS_PER_PAGE);
+  }, [filteredLogs, safeLogsPage]);
+
+  const totalAccessPages = Math.max(1, Math.ceil(filteredAuthEvents.length / ACCESS_EVENTS_PER_PAGE));
+  const safeAccessPage = Math.min(accessPage, totalAccessPages);
+  const paginatedAuthEvents = useMemo(() => {
+    const startIndex = (safeAccessPage - 1) * ACCESS_EVENTS_PER_PAGE;
+    return filteredAuthEvents.slice(startIndex, startIndex + ACCESS_EVENTS_PER_PAGE);
+  }, [filteredAuthEvents, safeAccessPage]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -266,14 +286,21 @@ export default function ActivityLogsPage() {
                 type="text"
                 placeholder="Search by admin, description, target, or IP..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setLogsPage(1);
+                  setAccessPage(1);
+                }}
                 className="admin-input py-3 pl-11 pr-4 text-sm"
               />
             </label>
 
             <select
               value={filterAction}
-              onChange={(e) => setFilterAction(e.target.value)}
+              onChange={(e) => {
+                setFilterAction(e.target.value);
+                setLogsPage(1);
+              }}
               className="admin-select px-4 py-3 text-sm"
             >
               <option value="">All Actions</option>
@@ -299,7 +326,7 @@ export default function ActivityLogsPage() {
           </div>
         ) : (
           <div className="space-y-3 p-5">
-            {filteredLogs.map((log) => (
+            {paginatedLogs.map((log) => (
               <article
                 key={log.id}
                 className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition-colors hover:bg-white"
@@ -344,9 +371,14 @@ export default function ActivityLogsPage() {
           </div>
         )}
 
-        <div className="border-t border-slate-200 px-5 py-4 text-sm text-slate-500 lg:hidden">
-          Showing {filteredLogs.length} of {logs.length} activity records
-        </div>
+        <PaginationControls
+          currentPage={safeLogsPage}
+          totalPages={totalLogPages}
+          totalItems={filteredLogs.length}
+          pageSize={ACTIVITY_LOGS_PER_PAGE}
+          onPageChange={setLogsPage}
+          itemLabel="activity records"
+        />
       </section>
 
       <section className="admin-panel rounded-3xl overflow-hidden">
@@ -373,7 +405,7 @@ export default function ActivityLogsPage() {
           </div>
         ) : (
           <div className="space-y-3 p-5">
-            {filteredAuthEvents.map((event) => (
+            {paginatedAuthEvents.map((event) => (
               <article
                 key={`auth-${event.id}`}
                 className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition-colors hover:bg-white"
@@ -416,6 +448,15 @@ export default function ActivityLogsPage() {
             ))}
           </div>
         )}
+
+        <PaginationControls
+          currentPage={safeAccessPage}
+          totalPages={totalAccessPages}
+          totalItems={filteredAuthEvents.length}
+          pageSize={ACCESS_EVENTS_PER_PAGE}
+          onPageChange={setAccessPage}
+          itemLabel="access events"
+        />
       </section>
     </div>
   );

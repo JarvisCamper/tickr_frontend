@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Activity, Clock3, Search, Wallet } from "lucide-react";
 import { safeFetch } from "../utils/apiHelper";
+import { PaginationControls } from "@/app/components/PaginationControls";
 
 interface TimeEntry {
   id: number;
@@ -17,6 +18,8 @@ interface TimeEntry {
   overtime_hours?: string;
   overtime_pay?: string;
 }
+
+const TIME_ENTRIES_PER_PAGE = 12;
 
 const formatDateTime = (value?: string | null) => {
   if (!value) return "In progress";
@@ -58,6 +61,7 @@ export default function AdminTimeEntriesPage() {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   async function loadEntries(searchValue: string, statusValue: string) {
     setLoading(true);
@@ -133,6 +137,13 @@ export default function AdminTimeEntriesPage() {
       }),
     [entries, searchTerm, statusFilter]
   );
+
+  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / TIME_ENTRIES_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedEntries = useMemo(() => {
+    const startIndex = (safeCurrentPage - 1) * TIME_ENTRIES_PER_PAGE;
+    return filteredEntries.slice(startIndex, startIndex + TIME_ENTRIES_PER_PAGE);
+  }, [filteredEntries, safeCurrentPage]);
 
   const stats = useMemo(() => {
     const runningCount = entries.filter((entry) => entry.is_running).length;
@@ -237,13 +248,19 @@ export default function AdminTimeEntriesPage() {
                 type="text"
                 placeholder="Search by user, email, project, or description..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="admin-input py-3 pl-11 pr-4 text-sm"
               />
             </label>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
               className="admin-select px-4 py-3 text-sm"
             >
               <option value="">All Statuses</option>
@@ -280,7 +297,7 @@ export default function AdminTimeEntriesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {filteredEntries.map((entry) => (
+                {paginatedEntries.map((entry) => (
                   <tr key={entry.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="px-5 py-4 align-top">
                       <p className="font-semibold text-slate-900">
@@ -327,9 +344,14 @@ export default function AdminTimeEntriesPage() {
           </div>
         )}
 
-        <div className="border-t border-slate-200 px-5 py-4 text-sm text-slate-500 xl:hidden">
-          Showing {filteredEntries.length} of {entries.length} entries
-        </div>
+        <PaginationControls
+          currentPage={safeCurrentPage}
+          totalPages={totalPages}
+          totalItems={filteredEntries.length}
+          pageSize={TIME_ENTRIES_PER_PAGE}
+          onPageChange={setCurrentPage}
+          itemLabel="entries"
+        />
       </section>
     </div>
   );

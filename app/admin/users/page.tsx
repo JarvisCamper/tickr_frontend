@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getApiUrl } from "@/constant/apiendpoints";
 import { getAuthHeaders, safeFetch } from "../utils/apiHelper";
+import { PaginationControls } from "@/app/components/PaginationControls";
 
 interface User {
   id: number;
@@ -30,6 +31,8 @@ const initialForm: UserForm = {
   is_superuser: false,
 };
 
+const USERS_PER_PAGE = 10;
+
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +41,7 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [form, setForm] = useState<UserForm>(initialForm);
   const [saving, setSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const initRef = useRef(false);
 
@@ -60,13 +64,24 @@ export default function UsersPage() {
     setLoading(false);
   };
 
-  const filteredUsers = users.filter((user) => {
-    const search = searchTerm.toLowerCase();
-    return (
-      (user.username || "").toLowerCase().includes(search) ||
-      user.email.toLowerCase().includes(search)
-    );
-  });
+  const filteredUsers = useMemo(
+    () =>
+      users.filter((user) => {
+        const search = searchTerm.toLowerCase();
+        return (
+          (user.username || "").toLowerCase().includes(search) ||
+          user.email.toLowerCase().includes(search)
+        );
+      }),
+    [users, searchTerm]
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / USERS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedUsers = useMemo(() => {
+    const startIndex = (safeCurrentPage - 1) * USERS_PER_PAGE;
+    return filteredUsers.slice(startIndex, startIndex + USERS_PER_PAGE);
+  }, [filteredUsers, safeCurrentPage]);
 
   const openEdit = (user: User) => {
     setEditingUser(user);
@@ -176,7 +191,10 @@ export default function UsersPage() {
             type="text"
             placeholder="Search users by name or email..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
             className="admin-input"
           />
         </div>
@@ -193,7 +211,7 @@ export default function UsersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredUsers.map((user) => (
+              {paginatedUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="font-medium text-gray-900">{user.username || user.email}</div>
@@ -234,6 +252,15 @@ export default function UsersPage() {
             </tbody>
           </table>
         </div>
+
+        <PaginationControls
+          currentPage={safeCurrentPage}
+          totalPages={totalPages}
+          totalItems={filteredUsers.length}
+          pageSize={USERS_PER_PAGE}
+          onPageChange={setCurrentPage}
+          itemLabel="users"
+        />
       </div>
 
       {editingUser ? (

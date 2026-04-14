@@ -1,10 +1,11 @@
 //app/teams/page.tsx
 "use client";
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useToast } from "../../context-and-provider";
 import { useTeams } from "./hooks/useTeams";
 import { Team } from "./index/type";
 import { useEmployeeRouteGuard } from "@/app/hooks/useEmployeeRouteGuard";
+import { PaginationControls } from "@/app/components/PaginationControls";
 
 // Components
 import { TeamCard } from "./components/TeamCard";
@@ -50,6 +51,8 @@ export default function TeamsPage() {
   // Selected team state
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [invitationLink, setInvitationLink] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const TEAMS_PER_PAGE = 9;
 
   useEffect(() => {
     if (isEmployeeAllowed) {
@@ -188,6 +191,13 @@ export default function TeamsPage() {
     window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
   };
 
+  const totalPages = Math.max(1, Math.ceil(teams.length / TEAMS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedTeams = useMemo(() => {
+    const startIndex = (safeCurrentPage - 1) * TEAMS_PER_PAGE;
+    return teams.slice(startIndex, startIndex + TEAMS_PER_PAGE);
+  }, [teams, safeCurrentPage]);
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -245,7 +255,7 @@ export default function TeamsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {teams.map((team) => (
+            {paginatedTeams.map((team) => (
               <TeamCard
                 key={team.id}
                 team={team}
@@ -261,6 +271,15 @@ export default function TeamsPage() {
             ))}
           </div>
         )}
+
+        <PaginationControls
+          currentPage={safeCurrentPage}
+          totalPages={totalPages}
+          totalItems={teams.length}
+          pageSize={TEAMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+          itemLabel="teams"
+        />
         </div>
 
         {/* Modals */}

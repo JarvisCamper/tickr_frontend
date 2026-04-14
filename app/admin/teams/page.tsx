@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getApiUrl } from "@/constant/apiendpoints";
 import { getAuthHeaders, safeFetch } from "../utils/apiHelper";
+import { PaginationControls } from "@/app/components/PaginationControls";
 
 interface UserOption {
   id: number;
@@ -34,6 +35,8 @@ const initialForm: TeamForm = {
   owner_id: "",
 };
 
+const TEAMS_PER_PAGE = 9;
+
 export default function TeamsPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [users, setUsers] = useState<UserOption[]>([]);
@@ -44,6 +47,7 @@ export default function TeamsPage() {
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState<TeamForm>(initialForm);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const initRef = useRef(false);
 
@@ -77,15 +81,26 @@ export default function TeamsPage() {
     setLoading(false);
   };
 
-  const filteredTeams = teams.filter((team) => {
-    const search = searchTerm.toLowerCase();
-    return (
-      team.name.toLowerCase().includes(search) ||
-      (team.description || "").toLowerCase().includes(search) ||
-      (team.owner_username || "").toLowerCase().includes(search) ||
-      (team.owner_email || "").toLowerCase().includes(search)
-    );
-  });
+  const filteredTeams = useMemo(
+    () =>
+      teams.filter((team) => {
+        const search = searchTerm.toLowerCase();
+        return (
+          team.name.toLowerCase().includes(search) ||
+          (team.description || "").toLowerCase().includes(search) ||
+          (team.owner_username || "").toLowerCase().includes(search) ||
+          (team.owner_email || "").toLowerCase().includes(search)
+        );
+      }),
+    [teams, searchTerm]
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredTeams.length / TEAMS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedTeams = useMemo(() => {
+    const startIndex = (safeCurrentPage - 1) * TEAMS_PER_PAGE;
+    return filteredTeams.slice(startIndex, startIndex + TEAMS_PER_PAGE);
+  }, [filteredTeams, safeCurrentPage]);
 
   const resetForm = () => {
     setForm(initialForm);
@@ -204,7 +219,10 @@ export default function TeamsPage() {
             type="text"
             placeholder="Search teams by name, owner, or description..."
             value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
+            onChange={(event) => {
+              setSearchTerm(event.target.value);
+              setCurrentPage(1);
+            }}
             className="admin-input"
           />
         </div>
@@ -222,7 +240,7 @@ export default function TeamsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredTeams.map((team) => (
+              {paginatedTeams.map((team) => (
                 <tr key={team.id} className="transition-colors hover:bg-slate-50">
                   <td className="px-6 py-4">
                     <div className="font-medium text-gray-900">{team.name}</div>
@@ -266,6 +284,15 @@ export default function TeamsPage() {
         {filteredTeams.length === 0 ? (
           <div className="py-12 text-center text-gray-500">No teams found.</div>
         ) : null}
+
+        <PaginationControls
+          currentPage={safeCurrentPage}
+          totalPages={totalPages}
+          totalItems={filteredTeams.length}
+          pageSize={TEAMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+          itemLabel="teams"
+        />
       </div>
 
       <div className="text-sm text-gray-600">

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getApiUrl } from "@/constant/apiendpoints";
 import { getAuthHeaders, safeFetch } from "../utils/apiHelper";
+import { PaginationControls } from "@/app/components/PaginationControls";
 
 interface Project {
   id: number;
@@ -37,6 +38,8 @@ interface ProjectForm {
   team_id: string;
 }
 
+const PROJECTS_PER_PAGE = 10;
+
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<UserOption[]>([]);
@@ -55,6 +58,7 @@ export default function ProjectsPage() {
     creator_id: "",
     team_id: "",
   });
+  const [currentPage, setCurrentPage] = useState(1);
 
   const initRef = useRef(false);
   useEffect(() => {
@@ -94,17 +98,28 @@ export default function ProjectsPage() {
     setLoading(false);
   };
 
-  const filteredProjects = projects.filter((project) => {
-    const search = searchTerm.toLowerCase();
-    const matchesSearch =
-      project.name.toLowerCase().includes(search) ||
-      (project.description || "").toLowerCase().includes(search) ||
-      (project.creator_username || "").toLowerCase().includes(search) ||
-      (project.creator_email || "").toLowerCase().includes(search) ||
-      (project.team_name || "").toLowerCase().includes(search);
-    const matchesType = filterType === "" || project.type === filterType;
-    return matchesSearch && matchesType;
-  });
+  const filteredProjects = useMemo(
+    () =>
+      projects.filter((project) => {
+        const search = searchTerm.toLowerCase();
+        const matchesSearch =
+          project.name.toLowerCase().includes(search) ||
+          (project.description || "").toLowerCase().includes(search) ||
+          (project.creator_username || "").toLowerCase().includes(search) ||
+          (project.creator_email || "").toLowerCase().includes(search) ||
+          (project.team_name || "").toLowerCase().includes(search);
+        const matchesType = filterType === "" || project.type === filterType;
+        return matchesSearch && matchesType;
+      }),
+    [projects, searchTerm, filterType]
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / PROJECTS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedProjects = useMemo(() => {
+    const startIndex = (safeCurrentPage - 1) * PROJECTS_PER_PAGE;
+    return filteredProjects.slice(startIndex, startIndex + PROJECTS_PER_PAGE);
+  }, [filteredProjects, safeCurrentPage]);
 
   const resetForm = () => {
     setEditingProject(null);
@@ -234,12 +249,18 @@ export default function ProjectsPage() {
             type="text"
             placeholder="Search projects by name, creator, or team..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
             className="admin-input"
           />
           <select
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
+            onChange={(e) => {
+              setFilterType(e.target.value);
+              setCurrentPage(1);
+            }}
             className="admin-select"
           >
             <option value="">All Types</option>
@@ -263,7 +284,7 @@ export default function ProjectsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredProjects.map((project) => (
+              {paginatedProjects.map((project) => (
                 <tr key={project.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4">
                     <span className="font-medium text-gray-900">{project.name}</span>
@@ -316,6 +337,15 @@ export default function ProjectsPage() {
             <p className="text-gray-500">No projects found</p>
           </div>
         )}
+
+        <PaginationControls
+          currentPage={safeCurrentPage}
+          totalPages={totalPages}
+          totalItems={filteredProjects.length}
+          pageSize={PROJECTS_PER_PAGE}
+          onPageChange={setCurrentPage}
+          itemLabel="projects"
+        />
       </div>
 
       <div className="text-sm text-gray-600">

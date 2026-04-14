@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { FolderKanban, PencilLine, Plus, Trash2, Users, X } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { useEmployeeRouteGuard } from '@/app/hooks/useEmployeeRouteGuard';
+import { PaginationControls } from '@/app/components/PaginationControls';
 
 interface Project {
   id: number;
@@ -44,6 +45,8 @@ const ProjectsPage = () => {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PROJECTS_PER_PAGE = 10;
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -102,6 +105,11 @@ const ProjectsPage = () => {
     return null;
   }
 
+  const totalPages = Math.max(1, Math.ceil(projects.length / PROJECTS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStart = (safeCurrentPage - 1) * PROJECTS_PER_PAGE;
+  const paginatedProjects = projects.slice(pageStart, pageStart + PROJECTS_PER_PAGE);
+
   const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this project?')) return;
 
@@ -113,6 +121,7 @@ const ProjectsPage = () => {
 
       if (response.ok) {
         setProjects(projects.filter(p => p.id !== id));
+        setCurrentPage(1);
         showToast("Project deleted successfully!", "success");
       } else {
         showToast("Failed to delete project", "error");
@@ -157,6 +166,7 @@ const ProjectsPage = () => {
 
       if (response.ok) {
         fetchProjects();
+        setCurrentPage(1);
         setShowEditModal(false);
         setEditingProject(null);
         showToast("Project updated successfully!", "success");
@@ -204,6 +214,7 @@ const ProjectsPage = () => {
 
       if (response.ok) {
         fetchProjects();
+        setCurrentPage(1);
         setNewProject({ name: '', description: '', type: 'individual', team_id: '' });
         setShowNewProjectModal(false);
         showToast("Project created successfully!", "success");
@@ -307,7 +318,7 @@ const ProjectsPage = () => {
                   </td>
                 </tr>
               ) : (
-                projects.map((project) => (
+                paginatedProjects.map((project) => (
                   <tr key={project.id} className="transition hover:bg-slate-50/70">
                     <td className="px-6 py-4 text-sm font-medium text-slate-900">{project.name}</td>
                     <td className="px-6 py-4 text-sm text-slate-600">{project.description || '-'}</td>
@@ -359,6 +370,15 @@ const ProjectsPage = () => {
             </tbody>
           </table>
         </div>
+
+          <PaginationControls
+            currentPage={safeCurrentPage}
+            totalPages={totalPages}
+            totalItems={projects.length}
+            pageSize={PROJECTS_PER_PAGE}
+            onPageChange={setCurrentPage}
+            itemLabel="projects"
+          />
         </section>
       </div>
 
