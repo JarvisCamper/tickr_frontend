@@ -45,6 +45,7 @@ export default function TimerPage() {
   const captureVideoRef = useRef<HTMLVideoElement | null>(null);
   const captureCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const stopRequestInFlightRef = useRef(false);
+  const isTimerPageUnmountingRef = useRef(false);
   const forceStopAfterShareEndRef = useRef<() => void>(() => undefined);
 
   const entriesPerPage = 10;
@@ -240,6 +241,7 @@ export default function TimerPage() {
       screenStreamRef.current = null;
       captureVideoRef.current = null;
       captureCanvasRef.current = null;
+      if (isTimerPageUnmountingRef.current) return;
       forceStopAfterShareEndRef.current();
     };
 
@@ -336,6 +338,7 @@ export default function TimerPage() {
 
   useEffect(() => {
     return () => {
+      isTimerPageUnmountingRef.current = true;
       stopScreenshotMonitoring();
     };
   }, []);

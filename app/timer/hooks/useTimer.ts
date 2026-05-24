@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Cookies from 'js-cookie';
 
 type StoredTimer = {
@@ -10,13 +10,39 @@ type StoredTimer = {
 };
 
 const STORAGE_KEY = 'tickr_timer_state';
+const EMPTY_TIMER: StoredTimer = { elapsed: 0, isRunning: false, isPaused: false, lastStart: null };
+
+const readStoredTimer = (): StoredTimer => {
+  try {
+    if (typeof window === 'undefined') return EMPTY_TIMER;
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return EMPTY_TIMER;
+    const parsed = JSON.parse(raw) as StoredTimer;
+    return {
+      elapsed: parsed.elapsed || 0,
+      isRunning: !!parsed.isRunning,
+      isPaused: !!parsed.isPaused,
+      lastStart: parsed.lastStart || null,
+    };
+  } catch {
+    return EMPTY_TIMER;
+  }
+};
+
+const getDisplayTime = (stored: StoredTimer): number => {
+  if (stored.isRunning && !stored.isPaused && stored.lastStart) {
+    return stored.elapsed + Math.floor((Date.now() - stored.lastStart) / 1000);
+  }
+  return stored.elapsed;
+};
 
 export function useTimer() {
-  const [totalTime, setTotalTime] = useState(0); // Displayed time (ticks live when running)
-  const [elapsed, setElapsed] = useState(0); // Accumulated on pause (for persistence)
-  const [isRunning, setIsRunning] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [lastStart, setLastStart] = useState<number | null>(null); // ms
+  const [initialStored] = useState(readStoredTimer);
+  const [totalTime, setTotalTime] = useState(() => getDisplayTime(initialStored)); // Displayed time (ticks live when running)
+  const [elapsed, setElapsed] = useState(initialStored.elapsed); // Accumulated on pause (for persistence)
+  const [isRunning, setIsRunning] = useState(initialStored.isRunning);
+  const [isPaused, setIsPaused] = useState(initialStored.isPaused);
+  const [lastStart, setLastStart] = useState<number | null>(initialStored.lastStart); // ms
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const formatTime = (seconds: number): string => {
@@ -24,22 +50,6 @@ export function useTimer() {
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const readStored = (): StoredTimer => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { elapsed: 0, isRunning: false, isPaused: false, lastStart: null };
-      const parsed = JSON.parse(raw) as StoredTimer;
-      return {
-        elapsed: parsed.elapsed || 0,
-        isRunning: !!parsed.isRunning,
-        isPaused: !!parsed.isPaused,
-        lastStart: parsed.lastStart || null,
-      };
-    } catch (_err) {
-      return { elapsed: 0, isRunning: false, isPaused: false, lastStart: null };
-    }
   };
 
   const persist = useCallback((state?: Partial<StoredTimer>) => {
@@ -51,17 +61,9 @@ export function useTimer() {
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-    } catch (_err) {
+    } catch {
       // ignore
     }
-  }, [elapsed, isRunning, isPaused, lastStart]);
-
-  // Derived current elapsed for non-running states (memoized, no effect sets)
-  const computeCurrentElapsed = useMemo(() => {
-    if (isRunning && !isPaused && lastStart) {
-      return elapsed + Math.floor((Date.now() - lastStart) / 1000);
-    }
-    return elapsed;
   }, [elapsed, isRunning, isPaused, lastStart]);
 
   const startTimer = (serverStartedAt?: string | number) => {
@@ -95,9 +97,8 @@ export function useTimer() {
     const now = Date.now();
     const added = lastStart ? Math.floor((now - lastStart) / 1000) : 0;
     const newElapsed = elapsed + added;
-    const currentTotal = totalTime + added; // Sync total to current before pause
     setElapsed(newElapsed);
-    setTotalTime(currentTotal);
+    setTotalTime(newElapsed);
     setLastStart(null);
     setIsPaused(true);
     persist({ elapsed: newElapsed, isPaused: true, lastStart: null });
@@ -105,11 +106,12 @@ export function useTimer() {
 
   const resumeTimer = () => {
     if (!isRunning || !isPaused) return;
+    const now = Date.now();
     // On resume, reset totalTime to current elapsed (pause accumulated it)
     setTotalTime(elapsed);
-    setLastStart(Date.now());
+    setLastStart(now);
     setIsPaused(false);
-    persist({ lastStart: Date.now(), isPaused: false });
+    persist({ lastStart: now, isPaused: false });
   };
 
   const stopTimer = () => {
@@ -117,10 +119,9 @@ export function useTimer() {
     const now = Date.now();
     const added = (!isPaused && lastStart) ? Math.floor((now - lastStart) / 1000) : 0;
     const finalElapsed = elapsed + added;
-    const finalTotal = totalTime + added;
 
     // Freeze display at final
-    setTotalTime(finalTotal);
+    setTotalTime(finalElapsed);
     setElapsed(finalElapsed);
 
     setIsRunning(false);
@@ -147,41 +148,24 @@ export function useTimer() {
     return headers;
   };
 
-  // Restore from storage on mount (useLayoutEffect for sync init, batch sets)
-  useLayoutEffect(() => {
-    try {
-      const stored = readStored();
-      setElapsed(stored.elapsed || 0);
-      setIsRunning(stored.isRunning || false);
-      setIsPaused(stored.isPaused || false);
-      setLastStart(stored.lastStart || null);
-      // Set initial totalTime based on stored (no compute here—let memo or interval handle)
-      setTotalTime(stored.elapsed || 0);
-    } catch (_err) {
-      // ignore
-    }
-  }, []);
-
-  // Timer interval for live ticking when running and not paused (use updater for +1 tick)
+  // Timer interval for live ticking when running and not paused.
   useEffect(() => {
-    if (isRunning && !isPaused) {
-      // Ensure any prior interval is cleared
+    if (!isRunning || isPaused) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
-      // Tick totalTime up by 1 each second (simple, performant updater)
-      intervalRef.current = setInterval(() => {
-        setTotalTime((prev) => prev + 1);
-      }, 1000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      // When stopping interval, sync totalTime to computed (no cascading, as deps stable)
-      setTotalTime(computeCurrentElapsed);
+      return;
     }
+
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    intervalRef.current = setInterval(() => {
+      setTotalTime((prev) => prev + 1);
+    }, 1000);
 
     return () => {
       if (intervalRef.current) {
@@ -189,12 +173,12 @@ export function useTimer() {
         intervalRef.current = null;
       }
     };
-  }, [isRunning, isPaused, computeCurrentElapsed]); // Added computeCurrentElapsed (stable memo)
+  }, [isRunning, isPaused]);
 
   // Persist changes when relevant values change
   useEffect(() => {
     persist();
-  }, [persist, elapsed, isRunning, isPaused, lastStart]); // Added persist (now callback)
+  }, [persist, elapsed, isRunning, isPaused, lastStart]);
 
   return {
     time: totalTime,
